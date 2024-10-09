@@ -11,8 +11,7 @@ module vesting::vesting {
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
     use sui::clock::{Self, Clock};
-
-    const BPS: u64 = 10_000;
+    use vesting::decimal::{from as decimal};
 
     public struct TreasuryCapKey<phantom W, phantom T> has store, copy, drop {}
     public struct CoinVestingKey<phantom W, phantom T> has store, copy, drop {}
@@ -33,7 +32,7 @@ module vesting::vesting {
     public struct PenaltyCap<phantom W, phantom T, phantom P> has key, store {
         id: UID,
         amount: u64,
-        start_penalty_bps: u64,
+        start_penalty: u64,
         start_time_s: u64,
         end_time_s: u64,
     }
@@ -82,7 +81,7 @@ module vesting::vesting {
     
     public fun mint_vesting_coin<W, T, P>(
         manager: &mut TreasuryManager,
-        start_penalty_bps: u64,
+        start_penalty: u64,
         start_time_s: u64,
         end_time_s: u64,
         vesting_coins: Coin<T>,
@@ -93,7 +92,7 @@ module vesting::vesting {
         let penalty_cap = PenaltyCap {
             id: object::new(ctx),
             amount: coin_amount,
-            start_penalty_bps,
+            start_penalty,
             start_time_s,
             end_time_s,
         };
@@ -133,10 +132,17 @@ module vesting::vesting {
 
         // Interpolate penalty linearly
         let penalty_amount = if (current_time < penalty_cap.end_time_s) {
-            let start_penalty = penalty_cap.start_penalty_bps * withdraw_amount / BPS;
-            let current_penalty = start_penalty - (
-                (start_penalty * (current_time - penalty_cap.start_time_s)) / (penalty_cap.end_time_s - penalty_cap.start_time_s)
+            let start_penalty = decimal(penalty_cap.start_penalty).mul(decimal(withdraw_amount)).div(decimal(penalty_cap.amount));
+            let time_weight = decimal(current_time).sub(decimal(penalty_cap.start_time_s)).div(
+                decimal(penalty_cap.end_time_s).sub(decimal(penalty_cap.start_time_s))
             );
+            let current_penalty = start_penalty.sub(
+                start_penalty.mul(time_weight)
+            ).ceil();
+            
+            // let current_penalty = start_penalty - (
+            //     (start_penalty * (current_time - penalty_cap.start_time_s)) / (penalty_cap.end_time_s - penalty_cap.start_time_s)
+            // );
 
             current_penalty
         } else {0};
@@ -146,6 +152,8 @@ module vesting::vesting {
         assert!(penalty_coin.value() >= penalty_amount, 3);
 
         // Update the penalty cap
+        // Start penalty is scaled down depending of how much has been redeemed
+        penalty_cap.start_penalty = penalty_cap.start_penalty * (penalty_cap.amount - withdraw_amount) / penalty_cap.amount;
         penalty_cap.amount = penalty_cap.amount - withdraw_amount;
 
         // Consume ticket coins
@@ -193,7 +201,7 @@ module vesting::vesting {
             let PenaltyCap {
                 id,
                 amount: _,
-                start_penalty_bps: _,
+                start_penalty: _,
                 start_time_s: _,
                 end_time_s: _,
             } = penalty_cap;
@@ -210,7 +218,7 @@ module vesting::vesting {
     public fun fields(manager: &TreasuryManager): &Bag { &manager.fields }
     public fun manager(admin_cap: &AdminCap): ID { admin_cap.id.to_inner() }
     public fun amount<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.amount }
-    public fun start_penalty_bps<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.start_penalty_bps }
+    public fun start_penalty<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.start_penalty }
     public fun start_time_s<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.start_time_s }
     public fun end_time_s<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.end_time_s }
 
