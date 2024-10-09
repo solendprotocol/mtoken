@@ -2,6 +2,7 @@
 // - Coin can't have wrapper type as CoinType
 // - Having a Coin for the vesting and withdraw capability seems odd, cause you can exchange one without the other
 module vesting::vesting {
+    use std::debug::print;
     use std::ascii;
     use std::type_name::{get, TypeName};
     use std::option::{none};
@@ -53,7 +54,7 @@ module vesting::vesting {
         transfer::share_object(treasury_manager);
     }
 
-    public fun create_ticket_coin<W: drop, T>(
+    public fun create_vesting_coin<W: drop, T>(
         otw: W,
         manager: &mut TreasuryManager,
         coin_meta: &CoinMetadata<T>,
@@ -79,7 +80,7 @@ module vesting::vesting {
         transfer::public_freeze_object(metadata);
     }
     
-    public fun create_vesting_token<W, T, P>(
+    public fun mint_vesting_coin<W, T, P>(
         manager: &mut TreasuryManager,
         start_penalty_bps: u64,
         start_time_s: u64,
@@ -132,17 +133,16 @@ module vesting::vesting {
 
         // Interpolate penalty linearly
         let penalty_amount = if (current_time < penalty_cap.end_time_s) {
-            let time_range = (penalty_cap.end_time_s - penalty_cap.start_time_s) as u128;
-            let time_elapsed = (current_time - penalty_cap.start_time_s) as u128;
-            let penalty_reduction = ((penalty_cap.start_penalty_bps as u128) * time_elapsed) / time_range;
-            let current_penalty = penalty_cap.start_penalty_bps - (penalty_reduction as u64);
+            let start_penalty = penalty_cap.start_penalty_bps * withdraw_amount / BPS;
+            let current_penalty = start_penalty - (
+                (start_penalty * (current_time - penalty_cap.start_time_s)) / (penalty_cap.end_time_s - penalty_cap.start_time_s)
+            );
 
-            // Calculate the penalty amount
-            (withdraw_amount * current_penalty) / BPS
+            current_penalty
         } else {0};
 
         // Apply the penalty
-        assert!(ticket_coin.value() >= withdraw_amount + penalty_amount, 3);
+        assert!(ticket_coin.value() >= withdraw_amount, 3);
         assert!(penalty_coin.value() >= penalty_amount, 3);
 
         // Update the penalty cap
@@ -157,7 +157,7 @@ module vesting::vesting {
         );
 
         if (!manager.fields.contains(CoinPenaltyKey<W, P> {})) {
-            manager.fields.add(CoinPenaltyKey<W, P> {}, balance::zero<T>())
+            manager.fields.add(CoinPenaltyKey<W, P> {}, balance::zero<P>())
         };
 
         let penalty_balance: &mut Balance<P> = manager.fields.borrow_mut(CoinPenaltyKey<W, P> {});
@@ -203,4 +203,36 @@ module vesting::vesting {
             transfer::public_transfer(penalty_cap, ctx.sender());
         };
     }
+
+    // View functions
+
+    public fun coin_penalty_types(manager: &TreasuryManager): &VecSet<TypeName> { &manager.coin_penalty_types }
+    public fun fields(manager: &TreasuryManager): &Bag { &manager.fields }
+    public fun manager(admin_cap: &AdminCap): ID { admin_cap.id.to_inner() }
+    public fun amount<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.amount }
+    public fun start_penalty_bps<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.start_penalty_bps }
+    public fun start_time_s<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.start_time_s }
+    public fun end_time_s<W, T, P>(penalty_cap: &PenaltyCap<W, T, P>): u64 { penalty_cap.end_time_s }
+
+    // Test functions
+
+    #[test_only]
+    public(package) fun init_for_testing(ctx: &mut TxContext): (TreasuryManager, AdminCap) {
+        let treasury_manager = TreasuryManager {
+            id: object::new(ctx),
+            coin_penalty_types: vec_set::empty(),
+            fields: bag::new(ctx)
+        };
+
+        let admin_cap = AdminCap {
+            id: object::new(ctx),
+            manager: treasury_manager.id.to_inner(),
+        };
+
+        (treasury_manager, admin_cap)
+    }
+
+    public(package) fun treasury_key_for_testing<W, T>(): TreasuryCapKey<W, T> { TreasuryCapKey {} }
+    public(package) fun coin_vesting_key_for_testing<W, P>(): CoinVestingKey<W, P> { CoinVestingKey {} }
+    public(package) fun coin_penalty_key_for_testing<W, P>(): CoinPenaltyKey<W, P> { CoinPenaltyKey {} }
 }
