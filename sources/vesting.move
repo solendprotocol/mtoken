@@ -4,6 +4,12 @@ module vesting::vesting {
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
     use sui::clock::{Self, Clock};
+    use suilend::decimal;
+
+    const EEndTimeBeforeStartTime: u64 = 0;
+    const ERedeemingBeforeStartTime: u64 = 1;
+    const ENotEnoughPenaltyFunds: u64 = 2;
+    const EIncorrectAdminCap: u64 = 3;
 
     public struct VestingManager<phantom Ticket, phantom Vesting, phantom Penalty> has key {
         id: UID,
@@ -31,7 +37,7 @@ module vesting::vesting {
         end_time_s: u64,
         ctx: &mut TxContext,
     ): (AdminCap<Ticket, Vesting, Penalty>, VestingManager<Ticket, Vesting, Penalty>, Coin<Ticket>) {
-        assert!(end_time_s > start_time_s, 0);
+        assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
         
         let mut name_ticker = ascii::string(b"WANG_"); // TODO
         name_ticker.append(coin_meta.get_symbol());
@@ -71,9 +77,8 @@ module vesting::vesting {
 
         (admin_cap, manager, ticket_coin)
     }
-
     
-    public fun redeem<Ticket, Vesting, Penalty>(
+    public fun redeem_ticket<Ticket, Vesting, Penalty>(
         manager: &mut VestingManager<Ticket, Vesting, Penalty>,
         ticket_coin: Coin<Ticket>,
         penalty_coin: &mut Coin<Penalty>,
@@ -84,19 +89,22 @@ module vesting::vesting {
         let current_time = clock::timestamp_ms(clock) / 1000;
     
         // Ensure current time is within the valid range
-        assert!(current_time >= manager.start_time_s, 1);
-        assert!(withdraw_amount <= manager.vesting_balance.value(), 0);
+        assert!(current_time >= manager.start_time_s, ERedeemingBeforeStartTime);
 
         // Interpolate penalty linearly
         let penalty_amount = if (current_time < manager.end_time_s) {
-            let start_penalty = manager.start_penalty_numerator * withdraw_amount / manager.start_penalty_denominator;
-            let current_penalty = start_penalty - (start_penalty * (current_time - manager.start_time_s) / (manager.end_time_s - manager.start_time_s));
+            let start_penalty = decimal::from(manager.start_penalty_numerator)
+                .mul(decimal::from(withdraw_amount))
+                .div(decimal::from(manager.start_penalty_denominator));
 
-            current_penalty
+            let time_weight = decimal::from(manager.end_time_s)
+                .sub(decimal::from(current_time))
+                .div(decimal::from(manager.end_time_s).sub(decimal::from(manager.start_time_s)));
+            
+            start_penalty.mul(time_weight).ceil()
         } else {0};
 
-        // Apply the penalty
-        assert!(penalty_coin.value() >= penalty_amount, 3);
+        assert!(penalty_coin.value() >= penalty_amount, ENotEnoughPenaltyFunds);
 
         // Consume used ticket coin
         manager.ticket_treasury_cap.burn(ticket_coin);
@@ -110,11 +118,11 @@ module vesting::vesting {
     }
 
     public fun collect_penalties<Ticket, Vesting, Penalty>(
-        admin_cap: &AdminCap<Ticket, Vesting, Penalty>,
         manager: &mut VestingManager<Ticket, Vesting, Penalty>,
+        admin_cap: &AdminCap<Ticket, Vesting, Penalty>,
         ctx: &mut TxContext,
     ): Coin<Penalty> {
-        assert!(admin_cap.manager == object::id(manager), 0);
+        assert!(admin_cap.manager == object::id(manager), EIncorrectAdminCap);
         coin::from_balance(manager.penalty_balance.withdraw_all(), ctx)
     }
 
