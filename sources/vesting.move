@@ -4,7 +4,7 @@ module vesting::vesting {
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
     use sui::clock::{Self, Clock};
-    use vesting::decimal::{from as decimal};
+    // use vesting::decimal::{from as decimal};
 
     public struct VestingManager<phantom W, phantom T, phantom P> has key {
         id: UID,
@@ -88,13 +88,8 @@ module vesting::vesting {
 
         // Interpolate penalty linearly
         let penalty_amount = if (current_time < manager.end_time_s) {
-            let start_penalty = decimal(manager.start_penalty_numerator).mul(decimal(withdraw_amount)).div(decimal(manager.start_penalty_denominator));
-            let time_weight = decimal(current_time).sub(decimal(manager.start_time_s)).div(
-                decimal(manager.end_time_s).sub(decimal(manager.start_time_s))
-            );
-            let current_penalty = start_penalty.sub(
-                start_penalty.mul(time_weight)
-            ).ceil();
+            let start_penalty = manager.start_penalty_numerator * withdraw_amount / manager.start_penalty_denominator;
+            let current_penalty = start_penalty - (start_penalty * (current_time - manager.start_time_s) / (manager.end_time_s - manager.start_time_s));
 
             current_penalty
         } else {0};
