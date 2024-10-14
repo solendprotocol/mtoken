@@ -9,7 +9,7 @@ module vesting::vesting {
         id: UID,
         vesting_balance: Balance<Vesting>,
         penalty_balance: Balance<Penalty>,
-        treasury_cap: TreasuryCap<Ticket>,
+        ticket_treasury_cap: TreasuryCap<Ticket>,
         start_penalty_numerator: u64,
         start_penalty_denominator: u64,
         start_time_s: u64,
@@ -31,6 +31,8 @@ module vesting::vesting {
         end_time_s: u64,
         ctx: &mut TxContext,
     ): (AdminCap<Ticket, Vesting, Penalty>, VestingManager<Ticket, Vesting, Penalty>, Coin<Ticket>) {
+        assert!(end_time_s > start_time_s, 0);
+        
         let mut name_ticker = ascii::string(b"WANG_"); // TODO
         name_ticker.append(coin_meta.get_symbol());
 
@@ -53,7 +55,7 @@ module vesting::vesting {
             id: object::new(ctx),
             vesting_balance: vesting_coin.into_balance(),
             penalty_balance: balance::zero(),
-            treasury_cap,
+            ticket_treasury_cap: treasury_cap,
             start_penalty_numerator,
             start_penalty_denominator,
             start_time_s,
@@ -96,14 +98,14 @@ module vesting::vesting {
         // Apply the penalty
         assert!(penalty_coin.value() >= penalty_amount, 3);
 
-        // Consume used vesting coin
-        manager.treasury_cap.burn(ticket_coin);
+        // Consume used ticket coin
+        manager.ticket_treasury_cap.burn(ticket_coin);
 
         manager.penalty_balance.join(
             penalty_coin.balance_mut().split(penalty_amount)
         );
 
-        // Return vesting coin
+        // Return vested coin
         coin::from_balance(manager.vesting_balance.split(withdraw_amount), ctx)
     }
 
