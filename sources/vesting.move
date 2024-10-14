@@ -4,11 +4,10 @@ module vesting::vesting {
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
     use sui::clock::{Self, Clock};
-    // use vesting::decimal::{from as decimal};
 
     public struct VestingManager<phantom W, phantom T, phantom P> has key {
         id: UID,
-        underlying_balance: Balance<T>,
+        vesting_balance: Balance<T>,
         penalty_balance: Balance<P>,
         treasury_cap: TreasuryCap<W>,
         start_penalty_numerator: u64,
@@ -24,7 +23,7 @@ module vesting::vesting {
 
     public fun mint_vesting_coin<W: drop, T, P>(
         otw: W,
-        underlying_coin: Coin<T>,
+        vesting_coin: Coin<T>,
         coin_meta: &CoinMetadata<T>,
         start_penalty_numerator: u64,
         start_penalty_denominator: u64,
@@ -48,11 +47,11 @@ module vesting::vesting {
             ctx,
         );
 
-        let vesting_coin = treasury_cap.mint(underlying_coin.value(), ctx);
+        let ticket_coin = treasury_cap.mint(vesting_coin.value(), ctx);
 
         let manager = VestingManager {
             id: object::new(ctx),
-            underlying_balance: underlying_coin.into_balance(),
+            vesting_balance: vesting_coin.into_balance(),
             penalty_balance: balance::zero(),
             treasury_cap,
             start_penalty_numerator,
@@ -68,23 +67,23 @@ module vesting::vesting {
 
         transfer::public_freeze_object(metadata);
 
-        (admin_cap, manager, vesting_coin)
+        (admin_cap, manager, ticket_coin)
     }
 
     
     public fun redeem<W, T, P>(
         manager: &mut VestingManager<W, T, P>,
-        vesting_coin: Coin<W>,
+        ticket_coin: Coin<W>,
         penalty_coin: &mut Coin<P>,
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<T> {
-        let withdraw_amount = vesting_coin.value();
+        let withdraw_amount = ticket_coin.value();
         let current_time = clock::timestamp_ms(clock) / 1000;
     
         // Ensure current time is within the valid range
         assert!(current_time >= manager.start_time_s, 1);
-        assert!(withdraw_amount <= manager.underlying_balance.value(), 0);
+        assert!(withdraw_amount <= manager.vesting_balance.value(), 0);
 
         // Interpolate penalty linearly
         let penalty_amount = if (current_time < manager.end_time_s) {
@@ -98,14 +97,14 @@ module vesting::vesting {
         assert!(penalty_coin.value() >= penalty_amount, 3);
 
         // Consume used vesting coin
-        manager.treasury_cap.burn(vesting_coin);
+        manager.treasury_cap.burn(ticket_coin);
 
         manager.penalty_balance.join(
             penalty_coin.balance_mut().split(penalty_amount)
         );
 
         // Return underlying coin
-        coin::from_balance(manager.underlying_balance.split(withdraw_amount), ctx)
+        coin::from_balance(manager.vesting_balance.split(withdraw_amount), ctx)
     }
 
     public fun collect_penalties<W, T, P>(
