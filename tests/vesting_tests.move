@@ -17,7 +17,7 @@ module vesting::vesting_tests {
 
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
-        let (admin_cap, manager, vesting_coin) = vesting::mint_vesting_coin<VEST, UNDERLYING, SUI>(
+        let (admin_cap, manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -47,7 +47,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_vesting_coin<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -92,7 +92,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_vesting_coin<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -138,7 +138,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_vesting_coin<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -206,7 +206,7 @@ module vesting::vesting_tests {
     //     let mut clock = clock::create_for_testing(ctx(&mut scenario));
     //     let coins_to_vest = treasury_cap.mint(10_000, ctx(&mut scenario));
 
-    //     let (mut vested_coin, mut penalty_cap) = vesting::mint_vesting_coin<OPTION_COIN,VESTED_COIN, SUI>(
+    //     let (mut vested_coin, mut penalty_cap) = vesting::mint_tickets<OPTION_COIN,VESTED_COIN, SUI>(
     //         &mut manager,
     //         1_000,
     //         clock.timestamp_ms() / 1_000, // start_time_s
@@ -283,7 +283,7 @@ module vesting::vesting_tests {
     //     let coins_to_vest = treasury_cap.mint(10_000, ctx(&mut scenario));
 
     //     let penalty_amount = 1_000;
-    //     let (mut vested_coin, mut penalty_cap) = vesting::mint_vesting_coin<OPTION_COIN,VESTED_COIN, SUI>(
+    //     let (mut vested_coin, mut penalty_cap) = vesting::mint_tickets<OPTION_COIN,VESTED_COIN, SUI>(
     //         &mut manager,
     //         penalty_amount,
     //         clock.timestamp_ms() / 1_000, // start_time_s
@@ -360,7 +360,7 @@ module vesting::vesting_tests {
     //     let coins_to_vest = treasury_cap.mint(10_000, ctx(&mut scenario));
 
     //     let penalty_amount = 1_000;
-    //     let (mut vested_coin, mut penalty_cap) = vesting::mint_vesting_coin<OPTION_COIN,VESTED_COIN, SUI>(
+    //     let (mut vested_coin, mut penalty_cap) = vesting::mint_tickets<OPTION_COIN,VESTED_COIN, SUI>(
     //         &mut manager,
     //         penalty_amount,
     //         clock.timestamp_ms() / 1_000, // start_time_s

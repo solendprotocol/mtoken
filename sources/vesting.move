@@ -5,11 +5,11 @@ module vesting::vesting {
     use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
     use sui::clock::{Self, Clock};
 
-    public struct VestingManager<phantom W, phantom T, phantom P> has key {
+    public struct VestingManager<phantom Ticket, phantom Vesting, phantom Penalty> has key {
         id: UID,
-        vesting_balance: Balance<T>,
-        penalty_balance: Balance<P>,
-        treasury_cap: TreasuryCap<W>,
+        vesting_balance: Balance<Vesting>,
+        penalty_balance: Balance<Penalty>,
+        treasury_cap: TreasuryCap<Ticket>,
         start_penalty_numerator: u64,
         start_penalty_denominator: u64,
         start_time_s: u64,
@@ -21,16 +21,16 @@ module vesting::vesting {
         manager: ID,
     }
 
-    public fun mint_vesting_coin<W: drop, T, P>(
-        otw: W,
-        vesting_coin: Coin<T>,
-        coin_meta: &CoinMetadata<T>,
+    public fun mint_tickets<Ticket: drop, Vesting, Penalty>(
+        otw: Ticket,
+        vesting_coin: Coin<Vesting>,
+        coin_meta: &CoinMetadata<Vesting>,
         start_penalty_numerator: u64,
         start_penalty_denominator: u64,
         start_time_s: u64,
         end_time_s: u64,
         ctx: &mut TxContext,
-    ): (AdminCap<W, T, P>, VestingManager<W, T, P>, Coin<W>) {
+    ): (AdminCap<Ticket, Vesting, Penalty>, VestingManager<Ticket, Vesting, Penalty>, Coin<Ticket>) {
         let mut name_ticker = ascii::string(b"WANG_"); // TODO
         name_ticker.append(coin_meta.get_symbol());
 
@@ -71,13 +71,13 @@ module vesting::vesting {
     }
 
     
-    public fun redeem<W, T, P>(
-        manager: &mut VestingManager<W, T, P>,
-        ticket_coin: Coin<W>,
-        penalty_coin: &mut Coin<P>,
+    public fun redeem<Ticket, Vesting, Penalty>(
+        manager: &mut VestingManager<Ticket, Vesting, Penalty>,
+        ticket_coin: Coin<Ticket>,
+        penalty_coin: &mut Coin<Penalty>,
         clock: &Clock,
         ctx: &mut TxContext,
-    ): Coin<T> {
+    ): Coin<Vesting> {
         let withdraw_amount = ticket_coin.value();
         let current_time = clock::timestamp_ms(clock) / 1000;
     
@@ -103,23 +103,23 @@ module vesting::vesting {
             penalty_coin.balance_mut().split(penalty_amount)
         );
 
-        // Return underlying coin
+        // Return vesting coin
         coin::from_balance(manager.vesting_balance.split(withdraw_amount), ctx)
     }
 
-    public fun collect_penalties<W, T, P>(
-        admin_cap: &AdminCap<W, T, P>,
-        manager: &mut VestingManager<W, T, P>,
+    public fun collect_penalties<Ticket, Vesting, Penalty>(
+        admin_cap: &AdminCap<Ticket, Vesting, Penalty>,
+        manager: &mut VestingManager<Ticket, Vesting, Penalty>,
         ctx: &mut TxContext,
-    ): Coin<P> {
+    ): Coin<Penalty> {
         assert!(admin_cap.manager == object::id(manager), 0);
         coin::from_balance(manager.penalty_balance.withdraw_all(), ctx)
     }
 
     // View functions
-    public fun manager<W, T, P>(admin_cap: &AdminCap<W, T, P>): ID { admin_cap.id.to_inner() }
-    public fun start_penalty_numerator<W, T, P>(manager: &VestingManager<W, T, P>): u64 { manager.start_penalty_numerator }
-    public fun start_penalty_denominator<W, T, P>(manager: &VestingManager<W, T, P>): u64 { manager.start_penalty_denominator }
-    public fun start_time_s<W, T, P>(manager: &VestingManager<W, T, P>): u64 { manager.start_time_s }
-    public fun end_time_s<W, T, P>(manager: &VestingManager<W, T, P>): u64 { manager.end_time_s }
+    public fun manager<Ticket, Vesting, Penalty>(admin_cap: &AdminCap<Ticket, Vesting, Penalty>): ID { admin_cap.id.to_inner() }
+    public fun start_penalty_numerator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_penalty_numerator }
+    public fun start_penalty_denominator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_penalty_denominator }
+    public fun start_time_s<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_time_s }
+    public fun end_time_s<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.end_time_s }
 }
