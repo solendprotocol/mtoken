@@ -1,16 +1,16 @@
 #[test_only]
-module vesting::vested_coin {
+module vesting::underlying {
     use sui::coin::{Self, TreasuryCap, CoinMetadata};
 
-    public struct VESTED_COIN has drop {}
+    public struct UNDERLYING has drop {}
 
     #[test_only]
     public fun create_currency(ctx: &mut TxContext): (
-        TreasuryCap<VESTED_COIN>, 
-        CoinMetadata<VESTED_COIN>, 
+        TreasuryCap<UNDERLYING>, 
+        CoinMetadata<UNDERLYING>, 
     ) {
         coin::create_currency(
-            VESTED_COIN {}, 
+            UNDERLYING {}, 
             6, 
             vector::empty(),
             vector::empty(),
@@ -22,6 +22,6 @@ module vesting::vested_coin {
 }
 
 #[test_only]
-module vesting::option_coin {
-    public struct OPTION_COIN has drop {}
+module vesting::vest {
+    public struct VEST has drop {}
 }
