@@ -22,7 +22,7 @@ module vesting::vesting {
         end_time_s: u64,
     }
 
-    public struct AdminCap<phantom W, phantom T, phantom P> has key, store {
+    public struct AdminCap<phantom Ticket, phantom Vesting, phantom Penalty> has key, store {
         id: UID,
         manager: ID,
     }
