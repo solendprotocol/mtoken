@@ -17,7 +17,8 @@ module vesting::vesting {
         penalty_balance: Balance<Penalty>,
         ticket_treasury_cap: TreasuryCap<Ticket>,
         start_penalty_numerator: u64,
-        start_penalty_denominator: u64,
+        end_penalty_numerator: u64,
+        penalty_denominator: u64,
         start_time_s: u64,
         end_time_s: u64,
     }
@@ -32,7 +33,8 @@ module vesting::vesting {
         vesting_coin: Coin<Vesting>,
         coin_meta: &CoinMetadata<Vesting>,
         start_penalty_numerator: u64,
-        start_penalty_denominator: u64,
+        end_penalty_numerator: u64,
+        penalty_denominator: u64,
         start_time_s: u64,
         end_time_s: u64,
         ctx: &mut TxContext,
@@ -63,7 +65,8 @@ module vesting::vesting {
             penalty_balance: balance::zero(),
             ticket_treasury_cap: treasury_cap,
             start_penalty_numerator,
-            start_penalty_denominator,
+            end_penalty_numerator,
+            penalty_denominator,
             start_time_s,
             end_time_s,
         };
@@ -92,17 +95,21 @@ module vesting::vesting {
         assert!(current_time >= manager.start_time_s, ERedeemingBeforeStartTime);
 
         // Interpolate penalty linearly
+        let end_penalty = decimal::from(manager.end_penalty_numerator)
+                .mul(decimal::from(withdraw_amount))
+                .div(decimal::from(manager.penalty_denominator));
+
         let penalty_amount = if (current_time < manager.end_time_s) {
             let start_penalty = decimal::from(manager.start_penalty_numerator)
                 .mul(decimal::from(withdraw_amount))
-                .div(decimal::from(manager.start_penalty_denominator));
+                .div(decimal::from(manager.penalty_denominator));
 
             let time_weight = decimal::from(manager.end_time_s)
                 .sub(decimal::from(current_time))
                 .div(decimal::from(manager.end_time_s).sub(decimal::from(manager.start_time_s)));
             
-            start_penalty.mul(time_weight).ceil()
-        } else {0};
+            start_penalty.mul(time_weight).add(end_penalty.mul(decimal::from(1).sub(time_weight))).ceil()
+        } else { end_penalty.ceil() };
 
         assert!(penalty_coin.value() >= penalty_amount, ENotEnoughPenaltyFunds);
 
@@ -129,7 +136,8 @@ module vesting::vesting {
     // View functions
     public fun manager<Ticket, Vesting, Penalty>(admin_cap: &AdminCap<Ticket, Vesting, Penalty>): ID { admin_cap.id.to_inner() }
     public fun start_penalty_numerator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_penalty_numerator }
-    public fun start_penalty_denominator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_penalty_denominator }
+    public fun end_penalty_numerator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.end_penalty_numerator }
+    public fun penalty_denominator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.penalty_denominator }
     public fun start_time_s<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_time_s }
     public fun end_time_s<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.end_time_s }
 }
