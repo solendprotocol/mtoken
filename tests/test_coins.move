@@ -1,5 +1,5 @@
 #[test_only]
-module vesting::underlying {
+module mtoken::underlying {
     use sui::coin::{Self, TreasuryCap, CoinMetadata};
 
     public struct UNDERLYING has drop {}
@@ -22,6 +22,6 @@ module vesting::underlying {
 }
 
 #[test_only]
-module vesting::vest {
+module mtoken::vest {
     public struct VEST has drop {}
 }

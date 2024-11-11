@@ -1,4 +1,4 @@
-module vesting::vesting {
+module mtoken::mtoken {
     use std::ascii;
     use std::option::{none};
     use sui::balance::{Self, Balance};
@@ -11,11 +11,11 @@ module vesting::vesting {
     const ENotEnoughPenaltyFunds: u64 = 2;
     const EIncorrectAdminCap: u64 = 3;
 
-    public struct VestingManager<phantom Ticket, phantom Vesting, phantom Penalty> has key {
+    public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key {
         id: UID,
         vesting_balance: Balance<Vesting>,
         penalty_balance: Balance<Penalty>,
-        ticket_treasury_cap: TreasuryCap<Ticket>,
+        mtoken_treasury_cap: TreasuryCap<MToken>,
         start_penalty_numerator: u64,
         end_penalty_numerator: u64,
         penalty_denominator: u64,
@@ -23,13 +23,13 @@ module vesting::vesting {
         end_time_s: u64,
     }
 
-    public struct AdminCap<phantom Ticket, phantom Vesting, phantom Penalty> has key, store {
+    public struct AdminCap<phantom MToken, phantom Vesting, phantom Penalty> has key, store {
         id: UID,
         manager: ID,
     }
 
-    public fun mint_tickets<Ticket: drop, Vesting, Penalty>(
-        otw: Ticket,
+    public fun mint_mtokens<MToken: drop, Vesting, Penalty>(
+        otw: MToken,
         vesting_coin: Coin<Vesting>,
         coin_meta: &CoinMetadata<Vesting>,
         start_penalty_numerator: u64,
@@ -38,7 +38,7 @@ module vesting::vesting {
         start_time_s: u64,
         end_time_s: u64,
         ctx: &mut TxContext,
-    ): (AdminCap<Ticket, Vesting, Penalty>, VestingManager<Ticket, Vesting, Penalty>, Coin<Ticket>) {
+    ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>) {
         assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
         
         let mut name_ticker = ascii::string(b"WANG_"); // TODO
@@ -57,13 +57,13 @@ module vesting::vesting {
             ctx,
         );
 
-        let ticket_coin = treasury_cap.mint(vesting_coin.value(), ctx);
+        let mtoken_coin = treasury_cap.mint(vesting_coin.value(), ctx);
 
         let manager = VestingManager {
             id: object::new(ctx),
             vesting_balance: vesting_coin.into_balance(),
             penalty_balance: balance::zero(),
-            ticket_treasury_cap: treasury_cap,
+            mtoken_treasury_cap: treasury_cap,
             start_penalty_numerator,
             end_penalty_numerator,
             penalty_denominator,
@@ -78,17 +78,17 @@ module vesting::vesting {
 
         transfer::public_freeze_object(metadata);
 
-        (admin_cap, manager, ticket_coin)
+        (admin_cap, manager, mtoken_coin)
     }
     
-    public fun redeem_ticket<Ticket, Vesting, Penalty>(
-        manager: &mut VestingManager<Ticket, Vesting, Penalty>,
-        ticket_coin: Coin<Ticket>,
+    public fun redeem_mtokens<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        mtoken_coin: Coin<MToken>,
         penalty_coin: &mut Coin<Penalty>,
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<Vesting> {
-        let withdraw_amount = ticket_coin.value();
+        let withdraw_amount = mtoken_coin.value();
         let current_time = clock::timestamp_ms(clock) / 1000;
     
         // Ensure current time is within the valid range
@@ -113,8 +113,8 @@ module vesting::vesting {
 
         assert!(penalty_coin.value() >= penalty_amount, ENotEnoughPenaltyFunds);
 
-        // Consume used ticket coin
-        manager.ticket_treasury_cap.burn(ticket_coin);
+        // Consume used mtoken coin
+        manager.mtoken_treasury_cap.burn(mtoken_coin);
 
         manager.penalty_balance.join(
             penalty_coin.balance_mut().split(penalty_amount)
@@ -124,9 +124,9 @@ module vesting::vesting {
         coin::from_balance(manager.vesting_balance.split(withdraw_amount), ctx)
     }
 
-    public fun collect_penalties<Ticket, Vesting, Penalty>(
-        manager: &mut VestingManager<Ticket, Vesting, Penalty>,
-        admin_cap: &AdminCap<Ticket, Vesting, Penalty>,
+    public fun collect_penalties<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        admin_cap: &AdminCap<MToken, Vesting, Penalty>,
         ctx: &mut TxContext,
     ): Coin<Penalty> {
         assert!(admin_cap.manager == object::id(manager), EIncorrectAdminCap);
@@ -134,10 +134,10 @@ module vesting::vesting {
     }
 
     // View functions
-    public fun manager<Ticket, Vesting, Penalty>(admin_cap: &AdminCap<Ticket, Vesting, Penalty>): ID { admin_cap.id.to_inner() }
-    public fun start_penalty_numerator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_penalty_numerator }
-    public fun end_penalty_numerator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.end_penalty_numerator }
-    public fun penalty_denominator<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.penalty_denominator }
-    public fun start_time_s<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.start_time_s }
-    public fun end_time_s<Ticket, Vesting, Penalty>(manager: &VestingManager<Ticket, Vesting, Penalty>): u64 { manager.end_time_s }
+    public fun manager<MToken, Vesting, Penalty>(admin_cap: &AdminCap<MToken, Vesting, Penalty>): ID { admin_cap.id.to_inner() }
+    public fun start_penalty_numerator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.start_penalty_numerator }
+    public fun end_penalty_numerator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.end_penalty_numerator }
+    public fun penalty_denominator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.penalty_denominator }
+    public fun start_time_s<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.start_time_s }
+    public fun end_time_s<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.end_time_s }
 }

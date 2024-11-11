@@ -1,8 +1,8 @@
 #[test_only]
-module vesting::vesting_tests {
-    use vesting::vesting::{Self};
-    use vesting::underlying::{Self, UNDERLYING};
-    use vesting::vest::{VEST};
+module mtoken::mtoken_tests {
+    use mtoken::mtoken::{Self};
+    use mtoken::underlying::{Self, UNDERLYING};
+    use mtoken::vest::{VEST};
     use sui::coin::{Self, Coin};
     use sui::clock;
     use sui::sui::SUI;
@@ -10,7 +10,7 @@ module vesting::vesting_tests {
     use sui::test_utils::{create_one_time_witness, destroy};
     
     #[test]
-    fun test_create_vesting_coin() {
+    fun test_create_mtoken_coin() {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
         let clock = clock::create_for_testing(ctx(&mut scenario));
@@ -18,7 +18,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
         
-        let (admin_cap, manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -32,7 +32,7 @@ module vesting::vesting_tests {
 
         destroy(metadata);
         destroy(clock);
-        destroy(vesting_coin);
+        destroy(mtoken_coin);
         destroy(treasury_cap);
         destroy(admin_cap);
         destroy(manager);
@@ -49,7 +49,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -64,9 +64,9 @@ module vesting::vesting_tests {
         // Immediate redeem
         let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -94,7 +94,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -111,9 +111,9 @@ module vesting::vesting_tests {
 
         clock.increment_for_testing(50 * 1_000);
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -141,7 +141,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -158,9 +158,9 @@ module vesting::vesting_tests {
 
         clock.increment_for_testing(100 * 1_000);
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -179,7 +179,7 @@ module vesting::vesting_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = vesting::EEndTimeBeforeStartTime)]
+    #[expected_failure(abort_code = mtoken::EEndTimeBeforeStartTime)]
     fun test_fail_end_time_before_start_time() {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
@@ -188,7 +188,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -200,7 +200,7 @@ module vesting::vesting_tests {
             ctx(&mut scenario),
         );
 
-        destroy(vesting_coin);
+        destroy(mtoken_coin);
         destroy(clock);
         destroy(metadata);
         destroy(treasury_cap);
@@ -211,7 +211,7 @@ module vesting::vesting_tests {
     }
     
     #[test]
-    #[expected_failure(abort_code = vesting::ERedeemingBeforeStartTime)]
+    #[expected_failure(abort_code = mtoken::ERedeemingBeforeStartTime)]
     fun test_fail_redeem_before_start_time() {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
@@ -221,7 +221,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -240,9 +240,9 @@ module vesting::vesting_tests {
 
         let clock = clock::create_for_testing(ctx(&mut scenario));
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -260,7 +260,7 @@ module vesting::vesting_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = vesting::ENotEnoughPenaltyFunds)]
+    #[expected_failure(abort_code = mtoken::ENotEnoughPenaltyFunds)]
     fun test_fail_not_enough_penalty_funds() {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
@@ -269,7 +269,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -284,9 +284,9 @@ module vesting::vesting_tests {
         // Immediate redeem
         let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(0, ctx(&mut scenario));
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -312,7 +312,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -327,9 +327,9 @@ module vesting::vesting_tests {
         // Immediate redeem
         let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -354,7 +354,7 @@ module vesting::vesting_tests {
     }
     
     #[test]
-    #[expected_failure(abort_code = vesting::EIncorrectAdminCap)]
+    #[expected_failure(abort_code = mtoken::EIncorrectAdminCap)]
     fun test_fail_collect_wrong_admin_cap() {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
@@ -363,7 +363,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (fake_admin_cap, fake_manager, fake_vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (fake_admin_cap, fake_manager, fake_mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -377,7 +377,7 @@ module vesting::vesting_tests {
 
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, vesting_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -392,7 +392,7 @@ module vesting::vesting_tests {
         // Immediate redeem
         let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
             vesting_coin,
             &mut penalty_sui,
@@ -416,7 +416,7 @@ module vesting::vesting_tests {
         destroy(admin_cap);
         destroy(fake_admin_cap);
         destroy(fake_manager);
-        destroy(fake_vesting_coin);
+        destroy(fake_mtoken_coin);
 
         test_scenario::end(scenario);
     }
@@ -430,7 +430,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -445,9 +445,9 @@ module vesting::vesting_tests {
         // Immediate redeem
         let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -475,7 +475,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -492,9 +492,9 @@ module vesting::vesting_tests {
 
         clock.increment_for_testing(50 * 1_000);
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -522,7 +522,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -539,9 +539,9 @@ module vesting::vesting_tests {
 
         clock.increment_for_testing(75 * 1_000);
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
@@ -569,7 +569,7 @@ module vesting::vesting_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = vesting::mint_tickets<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -586,9 +586,9 @@ module vesting::vesting_tests {
 
         clock.increment_for_testing(100 * 1_000);
 
-        let unvested_coin = vesting::redeem_ticket<VEST, UNDERLYING, SUI>(
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
             &mut manager,
-            vesting_coin,
+            mtoken_coin,
             &mut penalty_sui,
             &clock,
             ctx(&mut scenario),
