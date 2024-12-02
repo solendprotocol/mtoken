@@ -1,17 +1,16 @@
 module mtoken::mtoken {
-    use std::ascii;
-    use std::option::{none};
     use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
+    use sui::coin::{Self, Coin, TreasuryCap};
     use sui::clock::{Self, Clock};
     use suilend::decimal;
+    use sui::url::{Url};
 
     const EEndTimeBeforeStartTime: u64 = 0;
     const ERedeemingBeforeStartTime: u64 = 1;
     const ENotEnoughPenaltyFunds: u64 = 2;
     const EIncorrectAdminCap: u64 = 3;
 
-    public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key {
+    public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key, store {
         id: UID,
         vesting_balance: Balance<Vesting>,
         penalty_balance: Balance<Penalty>,
@@ -28,40 +27,35 @@ module mtoken::mtoken {
         manager: ID,
     }
 
-    public fun mint_mtokens<MToken: drop, Vesting, Penalty>(
+    public fun init_manager<MToken: drop, Vesting, Penalty>(
         otw: MToken,
-        vesting_coin: Coin<Vesting>,
-        coin_meta: &CoinMetadata<Vesting>,
+        decimals: u8,
+        symbol: vector<u8>,
+        name: vector<u8>,
+        description: vector<u8>,
+        icon_url: Option<Url>,
         start_penalty_numerator: u64,
         end_penalty_numerator: u64,
         penalty_denominator: u64,
         start_time_s: u64,
         end_time_s: u64,
         ctx: &mut TxContext,
-    ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>) {
+    ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>) {
         assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
-        
-        let mut name_ticker = ascii::string(b"WANG_"); // TODO
-        name_ticker.append(coin_meta.get_symbol());
 
-        let mut description = ascii::string(b"WANG Coin for ");  // TODO
-        description.append(coin_meta.get_symbol());
-
-        let (mut treasury_cap, metadata) = coin::create_currency(
+        let (treasury_cap, metadata) = coin::create_currency(
             otw,
-            coin_meta.get_decimals(),
-            name_ticker.into_bytes(),
-            name_ticker.into_bytes(),
-            description.into_bytes(),
-            none(), // TODO
+            decimals,
+            symbol,
+            name,
+            description,
+            icon_url,
             ctx,
         );
 
-        let mtoken_coin = treasury_cap.mint(vesting_coin.value(), ctx);
-
         let manager = VestingManager {
             id: object::new(ctx),
-            vesting_balance: vesting_coin.into_balance(),
+            vesting_balance: balance::zero(),
             penalty_balance: balance::zero(),
             mtoken_treasury_cap: treasury_cap,
             start_penalty_numerator,
@@ -78,7 +72,19 @@ module mtoken::mtoken {
 
         transfer::public_freeze_object(metadata);
 
-        (admin_cap, manager, mtoken_coin)
+        (admin_cap, manager)
+    }
+    
+    public fun mint_mtokens<MToken: drop, Vesting, Penalty>(
+        _admin: &AdminCap<MToken, Vesting, Penalty>,
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        vesting_coin: Coin<Vesting>,
+        ctx: &mut TxContext,
+    ): Coin<MToken> {
+        let vesting_coin_value = vesting_coin.value();
+        
+        manager.vesting_balance.join(vesting_coin.into_balance());
+        manager.mtoken_treasury_cap.mint(vesting_coin_value, ctx)
     }
     
     public fun redeem_mtokens<MToken, Vesting, Penalty>(

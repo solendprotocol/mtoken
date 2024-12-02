@@ -1,13 +1,57 @@
 #[test_only]
 module mtoken::mtoken_tests {
-    use mtoken::mtoken::{Self};
+    use std::ascii;
+    use std::option::none;
+    use mtoken::mtoken::{Self, AdminCap, VestingManager};
     use mtoken::underlying::{Self, UNDERLYING};
     use mtoken::vest::{VEST};
-    use sui::coin::{Self, Coin};
+    use sui::coin::{Self, Coin, CoinMetadata};
     use sui::clock;
     use sui::sui::SUI;
     use sui::test_scenario::{Self, ctx};
     use sui::test_utils::{create_one_time_witness, destroy};
+
+    public fun mint_mtokens_for_test<MToken: drop, Vesting, Penalty>(
+        otw: MToken,
+        vesting_coin: Coin<Vesting>,
+        coin_meta: &CoinMetadata<Vesting>,
+        start_penalty_numerator: u64,
+        end_penalty_numerator: u64,
+        penalty_denominator: u64,
+        start_time_s: u64,
+        end_time_s: u64,
+        ctx: &mut TxContext,
+    ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>) {
+        let mut name_ticker = ascii::string(b"WANG_");
+        name_ticker.append(coin_meta.get_symbol());
+
+        let mut description = ascii::string(b"WANG Coin for ");
+        description.append(coin_meta.get_symbol());
+
+        let (admin_cap, mut manager) = mtoken::init_manager<MToken, Vesting, Penalty>(
+            otw,
+            coin_meta.get_decimals(),
+            name_ticker.into_bytes(),
+            name_ticker.into_bytes(),
+            description.into_bytes(),
+            none(),
+            start_penalty_numerator,
+            end_penalty_numerator,
+            penalty_denominator,
+            start_time_s,
+            end_time_s,
+            ctx,
+        );
+
+        let mtoken_coin = mtoken::mint_mtokens(
+            &admin_cap,
+            &mut manager,
+            vesting_coin,
+            ctx,
+        );
+
+        (admin_cap, manager, mtoken_coin)
+    }
     
     #[test]
     fun test_create_mtoken_coin() {
@@ -18,7 +62,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
         
-        let (admin_cap, manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -49,7 +93,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -94,7 +138,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -141,7 +185,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -188,7 +232,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -221,7 +265,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -269,7 +313,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -312,7 +356,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -363,7 +407,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (fake_admin_cap, fake_manager, fake_mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (fake_admin_cap, fake_manager, fake_mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -377,7 +421,7 @@ module mtoken::mtoken_tests {
 
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, vesting_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, vesting_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -430,7 +474,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -475,7 +519,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -522,7 +566,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
@@ -569,7 +613,7 @@ module mtoken::mtoken_tests {
         let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
         let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
 
-        let (admin_cap, mut manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
             create_one_time_witness<VEST>(),
             underlying_coin,
             &metadata,
