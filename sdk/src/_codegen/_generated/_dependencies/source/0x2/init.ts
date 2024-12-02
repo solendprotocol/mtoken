@@ -78,6 +78,7 @@ loader.register(bls12381.G1);
 loader.register(bls12381.G2);
 loader.register(bls12381.GT);
 loader.register(bls12381.Scalar);
+loader.register(bls12381.UncompressedG1);
 loader.register(borrow.Borrow);
 loader.register(borrow.Referent);
 loader.register(vecMap.Entry);

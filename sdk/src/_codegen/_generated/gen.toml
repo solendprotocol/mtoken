@@ -1,2 +1,2 @@
 [packages]
-mtoken = { local = "../../../.." }
+mtoken = { local = "../../../../contract" }
