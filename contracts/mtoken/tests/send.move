@@ -1,4 +1,4 @@
-module send::send {
+module mtoken::send {
     // use sui::url;
     use sui::coin;
 

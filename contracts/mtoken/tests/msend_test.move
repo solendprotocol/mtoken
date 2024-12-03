@@ -1,8 +1,9 @@
-module send::msend_test {
+#[test_only]
+module mtoken::msend_test {
     use std::string::utf8;
     use sui::clock;
     use sui::balance;
-    use sui::coin::{Self, Coin};
+    use sui::coin::{Self, Coin, TreasuryCap};
     use sui::sui::SUI;
     use sui::test_utils::{destroy};
     use sui::test_scenario::{Self, Scenario, ctx};
@@ -11,11 +12,12 @@ module send::msend_test {
     use cetus_clmm::pool::{Pool as CetusPool};
     use cetus_clmm::config;
     use sui::tx_context::sender;
-    use send::send::{Self, SEND};
-    use send::msend::{Self, MSEND};
-    use mtoken::mtoken::{AdminCap, VestingManager};
+    use mtoken::send::{Self, SEND};
+    use mtoken::msend::{Self, MSEND};
+    use mtoken::mtoken;
 
     const START_TIME_S: u64 = 1733228602;
+    const END_TIME_S: u64 = 1734006202;
 
     public fun send_decimals(val: u64): u64 {
         val * 1_000_000
@@ -154,10 +156,19 @@ module send::msend_test {
         msend::init_for_testing(scenario.ctx());
         scenario.next_tx(@0x10);
 
-        let admin_cap: AdminCap<MSEND, SEND, SUI> = scenario.take_from_address(@0x10);
-        let mut manager: VestingManager<MSEND, SEND, SUI> = scenario.take_shared();
+        let treasury_cap: TreasuryCap<MSEND> = scenario.take_from_address(@0x10);
 
-        let msend = admin_cap.mint_mtokens(&mut manager, send, scenario.ctx());
+        let (admin_cap, manager, msend) = mtoken::mint_mtokens<MSEND, SEND, SUI>(
+            treasury_cap,
+            send,
+            10, // start_penalty_numerator
+            1, // end_penalty_numerator
+            100_000, // penalty_denominator
+            START_TIME_S, // start_time_s
+            END_TIME_S, // end_time_s
+            scenario.ctx(),
+        );
+
         transfer::public_share_object(manager);
         transfer::public_transfer(admin_cap, @0x10);
         transfer::public_transfer(msend, @0x10);
@@ -178,11 +189,19 @@ module send::msend_test {
         msend::init_for_testing(scenario.ctx());
         scenario.next_tx(@0x10);
 
-        let admin_cap: AdminCap<MSEND, SEND, SUI> = scenario.take_from_address(@0x10);
-        let mut manager: VestingManager<MSEND, SEND, SUI> = scenario.take_shared();
+        let treasury_cap: TreasuryCap<MSEND> = scenario.take_from_address(@0x10);
 
         let send_value = send.value();
-        let mut msend = admin_cap.mint_mtokens(&mut manager, send, scenario.ctx());
+        let (admin_cap, mut manager, mut msend) = mtoken::mint_mtokens<MSEND, SEND, SUI>(
+            treasury_cap,
+            send,
+            10, // start_penalty_numerator
+            1, // end_penalty_numerator
+            100_000, // penalty_denominator
+            START_TIME_S, // start_time_s
+            END_TIME_S, // end_time_s
+            scenario.ctx(),
+        );
         assert!(send_value == msend.value(), 0);
 
         scenario.next_tx(@0x10);
@@ -211,7 +230,7 @@ module send::msend_test {
     }
 
     #[test]
-    public fun testw() {
+    public fun test_flash_loan() {
         let mut scenario = test_scenario::begin(@0x10);
         let mut clock = clock::create_for_testing(scenario.ctx());
         clock.set_for_testing(START_TIME_S * 1000);
@@ -220,43 +239,29 @@ module send::msend_test {
         scenario.next_tx(@0x10);
         let send: Coin<SEND> = scenario.take_from_address(@0x10);
 
-        // msend::init_for_testing(scenario.ctx());
-
-        // let (admin_cap, mut manager) = mtoken::init_manager<MSEND, SEND, TEST_SUI>(
-        //     create_one_time_witness<MSEND>(), // otw
-        //     6,  // decimals
-        //     b"MSEND",  // symbol
-        //     b"MSEND",  // name
-        //     b"MSEND",  // description
-        //     option::none(),  // icon_url
-        //     10, // start_penalty_numerator
-        //     1, // end_penalty_numerator
-        //     100_000, // penalty_denominator
-        //     START_TIME_S, // start_time_s
-        //     END_TIME_S, // end_time_s
-        //     scenario.ctx(),
-        // );
-
-        // scenario.next_tx(@0x10);
-
-        // // let admin_cap: AdminCap<MSEND, SEND, SUI> = scenario.take_from_address(@0x10);
-        // // let mut manager: VestingManager<MSEND, SEND, SUI> = scenario.take_shared();
-
         msend::init_for_testing(scenario.ctx());
         scenario.next_tx(@0x10);
 
-        let admin_cap: AdminCap<MSEND, SEND, SUI> = scenario.take_from_address(@0x10);
-        let mut manager: VestingManager<MSEND, SEND, SUI> = scenario.take_shared();
+        let treasury_cap: TreasuryCap<MSEND> = scenario.take_from_address(@0x10);
 
         let send_value = send.value();
-        let mut msend = admin_cap.mint_mtokens(&mut manager, send, scenario.ctx());
+        
+        let (admin_cap, mut manager, mut msend) = mtoken::mint_mtokens<MSEND, SEND, SUI>(
+            treasury_cap,
+            send,
+            10, // start_penalty_numerator
+            1, // end_penalty_numerator
+            100_000, // penalty_denominator
+            START_TIME_S, // start_time_s
+            END_TIME_S, // end_time_s
+            scenario.ctx(),
+        );
+
         assert!(send_value == msend.value(), 0);
 
         scenario.next_tx(@0x10);
 
         let msend_to_redeem = msend.split(1_000_000, scenario.ctx());
-        // let mut penalty_coin = coin::mint_for_testing<SUI>(100, scenario.ctx());
-
 
         let (mut pool, config, pool_admin_cap, position) = setup_cetus_pool_split_liquidity(&mut scenario);
 
@@ -273,9 +278,6 @@ module send::msend_test {
             min_price,
             &clock,
         );
-
-        print(&send_bal.value());
-        print(&sui_bal.value());
 
         assert_eq(send_bal.value(), 0);
         assert_eq(sui_bal.value(), 100);
@@ -296,10 +298,6 @@ module send::msend_test {
 
         cetus_clmm::pool::repay_flash_swap(&config, &mut pool, send_bal, balance::zero(), receipt);
 
-        // destroy(send_bal);
-        // destroy(sui_bal);
-        // destroy(receipt);
-
         destroy(pool);
         destroy(config);
         destroy(pool_admin_cap);
@@ -314,6 +312,4 @@ module send::msend_test {
 
         scenario.end();
     }
-
-    use std::debug::print;
 }
