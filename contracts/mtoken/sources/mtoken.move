@@ -3,7 +3,6 @@ module mtoken::mtoken {
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::clock::{Self, Clock};
     use suilend::decimal;
-    use sui::url::{Url};
 
     const VERSION: u64 = 0;
 
@@ -31,36 +30,24 @@ module mtoken::mtoken {
         manager: ID,
     }
 
-    public fun init_manager<MToken: drop, Vesting, Penalty>(
-        otw: MToken,
-        decimals: u8,
-        symbol: vector<u8>,
-        name: vector<u8>,
-        description: vector<u8>,
-        icon_url: Option<Url>,
+    public fun mint_mtokens<MToken: drop, Vesting, Penalty>(
+        mut treasury_cap: TreasuryCap<MToken>,
+        vesting_coin: Coin<Vesting>,
         start_penalty_numerator: u64,
         end_penalty_numerator: u64,
         penalty_denominator: u64,
         start_time_s: u64,
         end_time_s: u64,
         ctx: &mut TxContext,
-    ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>) {
+    ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>) {
         assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
 
-        let (treasury_cap, metadata) = coin::create_currency(
-            otw,
-            decimals,
-            symbol,
-            name,
-            description,
-            icon_url,
-            ctx,
-        );
+        let mtoken_coin = treasury_cap.mint(vesting_coin.value(), ctx);
 
         let manager = VestingManager {
             id: object::new(ctx),
             version: VERSION,
-            vesting_balance: balance::zero(),
+            vesting_balance: vesting_coin.into_balance(),
             penalty_balance: balance::zero(),
             mtoken_treasury_cap: treasury_cap,
             start_penalty_numerator,
@@ -75,23 +62,7 @@ module mtoken::mtoken {
             manager: manager.id.to_inner(),
         };
 
-        transfer::public_freeze_object(metadata);
-
-        (admin_cap, manager)
-    }
-    
-    public fun mint_mtokens<MToken: drop, Vesting, Penalty>(
-        _admin: &AdminCap<MToken, Vesting, Penalty>,
-        manager: &mut VestingManager<MToken, Vesting, Penalty>,
-        vesting_coin: Coin<Vesting>,
-        ctx: &mut TxContext,
-    ): Coin<MToken> {
-        manager.assert_version_and_upgrade();
-
-        let vesting_coin_value = vesting_coin.value();
-        
-        manager.vesting_balance.join(vesting_coin.into_balance());
-        manager.mtoken_treasury_cap.mint(vesting_coin_value, ctx)
+        (admin_cap, manager, mtoken_coin)
     }
     
     public fun redeem_mtokens<MToken, Vesting, Penalty>(

@@ -28,13 +28,19 @@ module mtoken::mtoken_tests {
         let mut description = ascii::string(b"WANG Coin for ");
         description.append(coin_meta.get_symbol());
 
-        let (admin_cap, mut manager) = mtoken::init_manager<MToken, Vesting, Penalty>(
+        let (treasury_cap, metadata) = coin::create_currency(
             otw,
             coin_meta.get_decimals(),
             name_ticker.into_bytes(),
             name_ticker.into_bytes(),
             description.into_bytes(),
             none(),
+            ctx,
+        );
+
+        let (admin_cap, manager, mtoken_coin) = mtoken::mint_mtokens(
+            treasury_cap,
+            vesting_coin,
             start_penalty_numerator,
             end_penalty_numerator,
             penalty_denominator,
@@ -43,12 +49,7 @@ module mtoken::mtoken_tests {
             ctx,
         );
 
-        let mtoken_coin = mtoken::mint_mtokens(
-            &admin_cap,
-            &mut manager,
-            vesting_coin,
-            ctx,
-        );
+        transfer::public_freeze_object(metadata);
 
         (admin_cap, manager, mtoken_coin)
     }

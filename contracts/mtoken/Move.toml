@@ -5,7 +5,7 @@ edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet", override = true }
 suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "contracts/suilend", rev = "devel"}
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
@@ -20,13 +20,14 @@ suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "con
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-mtoken = "0x0"
+mtoken = "0x8e69f87223f1a6a4a7c3bd5d3c1317681c02593eed581448f71e6259abdd679c"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
 # alice = "0xA11CE"
 
 [dev-dependencies]
+CetusClmm = { local = "../dependencies/cetus" }
 # The dev-dependencies section allows overriding dependencies for `--test` and
 # `--dev` modes. You can introduce test-only dependencies here.
 # Local = { local = "../path/to/dev-build" }
