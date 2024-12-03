@@ -5,6 +5,9 @@ module mtoken::mtoken {
     use suilend::decimal;
     use sui::url::{Url};
 
+    const VERSION: u64 = 0;
+
+    const EIncorrectVersion: u64 = 999;
     const EEndTimeBeforeStartTime: u64 = 0;
     const ERedeemingBeforeStartTime: u64 = 1;
     const ENotEnoughPenaltyFunds: u64 = 2;
@@ -12,6 +15,7 @@ module mtoken::mtoken {
 
     public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key, store {
         id: UID,
+        version: u64,
         vesting_balance: Balance<Vesting>,
         penalty_balance: Balance<Penalty>,
         mtoken_treasury_cap: TreasuryCap<MToken>,
@@ -55,6 +59,7 @@ module mtoken::mtoken {
 
         let manager = VestingManager {
             id: object::new(ctx),
+            version: VERSION,
             vesting_balance: balance::zero(),
             penalty_balance: balance::zero(),
             mtoken_treasury_cap: treasury_cap,
@@ -81,6 +86,8 @@ module mtoken::mtoken {
         vesting_coin: Coin<Vesting>,
         ctx: &mut TxContext,
     ): Coin<MToken> {
+        manager.assert_version_and_upgrade();
+
         let vesting_coin_value = vesting_coin.value();
         
         manager.vesting_balance.join(vesting_coin.into_balance());
@@ -94,6 +101,8 @@ module mtoken::mtoken {
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<Vesting> {
+        manager.assert_version_and_upgrade();
+
         let withdraw_amount = mtoken_coin.value();
         let current_time = clock::timestamp_ms(clock) / 1000;
     
@@ -135,7 +144,9 @@ module mtoken::mtoken {
         admin_cap: &AdminCap<MToken, Vesting, Penalty>,
         ctx: &mut TxContext,
     ): Coin<Penalty> {
+        manager.assert_version_and_upgrade();
         assert!(admin_cap.manager == object::id(manager), EIncorrectAdminCap);
+
         coin::from_balance(manager.penalty_balance.withdraw_all(), ctx)
     }
 
@@ -146,4 +157,28 @@ module mtoken::mtoken {
     public fun penalty_denominator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.penalty_denominator }
     public fun start_time_s<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.start_time_s }
     public fun end_time_s<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.end_time_s }
+
+    // Upgrade functions
+    public fun migrate<MToken: drop, Vesting, Penalty>(
+        _admin: &AdminCap<MToken, Vesting, Penalty>,
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+    ) {
+        assert!(manager.version < VERSION, EIncorrectVersion);
+        manager.version = VERSION;
+    }
+
+    public(package) fun assert_version<MToken, Vesting, Penalty>(
+        manager: &VestingManager<MToken, Vesting, Penalty>,
+    ) {
+        assert!(manager.version == VERSION, EIncorrectVersion);
+    }
+
+    public(package) fun assert_version_and_upgrade<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+    ) {
+        if (manager.version < VERSION) {
+            manager.version = VERSION;
+        };
+        assert_version(manager);
+    }
 }
