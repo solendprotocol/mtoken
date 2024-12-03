@@ -16,9 +16,9 @@ module send::send {
             ctx
         );
 
-        let coin = coin::mint(&mut treasury, 100_000_000_000 * 10_000_000, ctx);
+        let coin = coin::mint(&mut treasury, 100_000_000_000 * 1_000_000, ctx);
 
-        transfer::public_share_object(metadata);
+        transfer::public_freeze_object(metadata);
         transfer::public_transfer(coin, tx_context::sender(ctx));
         transfer::public_transfer(treasury, tx_context::sender(ctx));
     }

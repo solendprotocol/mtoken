@@ -5,10 +5,10 @@ edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet", override = true }
-usdc = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/usdc", rev = "master" }
-mtoken = { local = "../contract" }
+mtoken = { local = "../mtoken" }
+CetusClmm = { local = "../dependencies/cetus" }
 
 
 [addresses]
-send = "0xf"
+send = "0xfffffff"
 sui = "0x2"
