@@ -1,12 +1,14 @@
 [package]
-name = "mtoken"
+name = "CetusClmm"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+published-at= "0x70968826ad1b4ba895753f634b0aea68d0672908ca1075a2abdf0fc9e0b2fc6a"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet", override = true }
-suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "contracts/suilend", rev = "devel"}
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+MoveStl = { local = "../move-stl" }
+IntegerMate = { local = "../integer-mate" }
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
@@ -20,14 +22,13 @@ suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "con
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-mtoken = "0x8e69f87223f1a6a4a7c3bd5d3c1317681c02593eed581448f71e6259abdd679c"
+cetus_clmm = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
 # alice = "0xA11CE"
 
 [dev-dependencies]
-CetusClmm = { local = "../dependencies/cetus" }
 # The dev-dependencies section allows overriding dependencies for `--test` and
 # `--dev` modes. You can introduce test-only dependencies here.
 # Local = { local = "../path/to/dev-build" }
