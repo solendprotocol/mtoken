@@ -650,4 +650,62 @@ module mtoken::mtoken_tests {
 
         test_scenario::end(scenario);
     }
+
+    #[test]
+    #[expected_failure(abort_code = mtoken::EMTokenSupplyNotZero)]
+    fun test_fail_create_mtoken_coin_non_zero_supply() {
+        let owner = @0x10;
+        let mut scenario = test_scenario::begin(owner);
+        let clock = clock::create_for_testing(ctx(&mut scenario));
+
+        let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
+        let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
+
+        let start_penalty_numerator = 10;
+        let end_penalty_numerator = 0;
+        let penalty_denominator = 100;
+        let start_time_s = clock.timestamp_ms() / 1_000;
+        let end_time_s = (clock.timestamp_ms() / 1_000) + 100;
+
+        let mut name_ticker = ascii::string(b"WANG_");
+        name_ticker.append(metadata.get_symbol());
+
+        let mut description = ascii::string(b"WANG Coin for ");
+        description.append(metadata.get_symbol());
+
+        let (mut mtoken_treasury_cap, mtoken_metadata) = coin::create_currency(
+            create_one_time_witness<VEST>(),
+            metadata.get_decimals(),
+            name_ticker.into_bytes(),
+            name_ticker.into_bytes(),
+            description.into_bytes(),
+            none(),
+            scenario.ctx(),
+        );
+
+        destroy(metadata);
+
+        let extra_coin = mtoken_treasury_cap.mint(1, scenario.ctx());
+
+        let (admin_cap, manager, mtoken_coin) = mtoken::mint_mtokens<VEST, UNDERLYING, SUI>(
+            mtoken_treasury_cap,
+            underlying_coin,
+            start_penalty_numerator,
+            end_penalty_numerator,
+            penalty_denominator,
+            start_time_s,
+            end_time_s,
+            scenario.ctx(),
+        );
+
+        destroy(clock);
+        destroy(extra_coin);
+        destroy(treasury_cap);
+        destroy(mtoken_metadata);
+        destroy(mtoken_coin);
+        destroy(admin_cap);
+        destroy(manager);
+
+        test_scenario::end(scenario);
+    }
 }

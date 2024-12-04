@@ -11,6 +11,7 @@ module mtoken::mtoken {
     const ERedeemingBeforeStartTime: u64 = 1;
     const ENotEnoughPenaltyFunds: u64 = 2;
     const EIncorrectAdminCap: u64 = 3;
+    const EMTokenSupplyNotZero: u64 = 4;
 
     public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key, store {
         id: UID,
@@ -41,6 +42,7 @@ module mtoken::mtoken {
         ctx: &mut TxContext,
     ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>) {
         assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
+        assert!(treasury_cap.supply().supply_value() == 0, EMTokenSupplyNotZero);
 
         let mtoken_coin = treasury_cap.mint(vesting_coin.value(), ctx);
 
