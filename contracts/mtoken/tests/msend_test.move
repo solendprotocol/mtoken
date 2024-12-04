@@ -23,67 +23,6 @@ module mtoken::msend_test {
         val * 1_000_000
     }
 
-    public fun setup_cetus_pool_split_liquidity_2(
-        scenario: &mut Scenario,
-    ): (
-        cetus_clmm::pool::Pool<SEND, SUI>,
-        cetus_clmm::config::GlobalConfig,
-        cetus_clmm::config::AdminCap,
-        cetus_clmm::position::Position,
-    ) {
-        let owner = sender(ctx(scenario));
-        let clock = clock::create_for_testing(ctx(scenario));
-
-        // Supply allocated
-        let send_liquidity_amount = send_decimals(20_000_000_000);
-        
-        let tick_spacing = 200_u32;
-        
-        let sqrt_price = cetus_clmm::tick_math::get_sqrt_price_at_tick(
-            integer_mate::i32::from(46000) // 0.1
-        );
-
-        let mut registry = factory::init_for_testing(ctx(scenario));
-        let (mut config, admin_cap) = config::init_for_testing(ctx(scenario));
-        let fee_rate = 10000;
-        config::add_fee_tier(&mut config, tick_spacing, fee_rate, ctx(scenario));
-
-        // Prepare coins
-        let send = coin::mint_for_testing<SEND>(send_liquidity_amount, ctx(scenario));
-
-        // Ticks
-        let tick_a1 = 23000; // 0.01
-        let tick_a2 = 69000; // 1.0
-
-        let (position, coin_meme, coin_sui) = factory::create_pool_with_liquidity<SEND, SUI>(
-            &mut registry,
-            &config,
-            tick_spacing,
-            sqrt_price, // current_sqrt_price
-            utf8(b"hello"),
-            tick_a1,
-            tick_a2,
-            send,
-            coin::mint_for_testing(1_000_000_000, ctx(scenario)),
-            send_liquidity_amount,
-            0,
-            true, // from_a
-            &clock,
-            ctx(scenario),
-        );
-
-        destroy(coin_meme);
-        destroy(coin_sui);
-
-        test_scenario::next_tx(scenario, owner);
-        let pool: CetusPool<SEND, SUI> = test_scenario::take_shared(scenario);
-
-        destroy(clock);
-        destroy(registry);
-
-        (pool, config, admin_cap, position)
-    }
-    
     public fun setup_cetus_pool_split_liquidity(
         scenario: &mut Scenario,
     ): (
