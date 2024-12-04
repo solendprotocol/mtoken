@@ -27,7 +27,6 @@ mtoken = "0x8e69f87223f1a6a4a7c3bd5d3c1317681c02593eed581448f71e6259abdd679c"
 # alice = "0xA11CE"
 
 [dev-dependencies]
-CetusClmm = { local = "../dependencies/cetus" }
 # The dev-dependencies section allows overriding dependencies for `--test` and
 # `--dev` modes. You can introduce test-only dependencies here.
 # Local = { local = "../path/to/dev-build" }
