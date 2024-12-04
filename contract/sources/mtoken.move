@@ -1,18 +1,29 @@
 module mtoken::mtoken {
-    use std::ascii;
-    use std::option::{none};
+    use std::type_name::{Self, TypeName};
     use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin, CoinMetadata, TreasuryCap};
+    use sui::coin::{Self, Coin, TreasuryCap};
     use sui::clock::{Self, Clock};
+    use sui::event::emit;
     use suilend::decimal;
 
+    // ===== Constants =====
+
+    const VERSION: u64 = 0;
+
+    // ===== Errors =====
+
+    const EIncorrectVersion: u64 = 999;
     const EEndTimeBeforeStartTime: u64 = 0;
     const ERedeemingBeforeStartTime: u64 = 1;
     const ENotEnoughPenaltyFunds: u64 = 2;
     const EIncorrectAdminCap: u64 = 3;
+    const EMTokenSupplyNotZero: u64 = 4;
 
-    public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key {
+    // ===== Structs =====
+
+    public struct VestingManager<phantom MToken, phantom Vesting, phantom Penalty> has key, store {
         id: UID,
+        version: u64,
         vesting_balance: Balance<Vesting>,
         penalty_balance: Balance<Penalty>,
         mtoken_treasury_cap: TreasuryCap<MToken>,
@@ -28,10 +39,38 @@ module mtoken::mtoken {
         manager: ID,
     }
 
+    // ===== Events =====
+
+    public struct MintMTokensEvent has store, copy, drop {
+        manager_id: ID,
+        mtoken_minted: u64,
+        mtoken_type: TypeName,
+        vesting_type: TypeName,
+        penalty_type: TypeName,
+    }
+
+    public struct RedeemMTokensEvent has store, copy, drop {
+        manager_id: ID,
+        withdraw_amount: u64,
+        penalty_amount: u64,
+        mtoken_type: TypeName,
+        vesting_type: TypeName,
+        penalty_type: TypeName,
+    }
+
+    public struct PenaltyCollectedEvent has store, copy, drop {
+        manager_id: ID,
+        amount_collected: u64,
+        mtoken_type: TypeName,
+        vesting_type: TypeName,
+        penalty_type: TypeName,
+    }
+
+    // ===== Public functions =====
+
     public fun mint_mtokens<MToken: drop, Vesting, Penalty>(
-        otw: MToken,
+        mut treasury_cap: TreasuryCap<MToken>,
         vesting_coin: Coin<Vesting>,
-        coin_meta: &CoinMetadata<Vesting>,
         start_penalty_numerator: u64,
         end_penalty_numerator: u64,
         penalty_denominator: u64,
@@ -40,27 +79,13 @@ module mtoken::mtoken {
         ctx: &mut TxContext,
     ): (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>) {
         assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
-        
-        let mut name_ticker = ascii::string(b"WANG_"); // TODO
-        name_ticker.append(coin_meta.get_symbol());
-
-        let mut description = ascii::string(b"WANG Coin for ");  // TODO
-        description.append(coin_meta.get_symbol());
-
-        let (mut treasury_cap, metadata) = coin::create_currency(
-            otw,
-            coin_meta.get_decimals(),
-            name_ticker.into_bytes(),
-            name_ticker.into_bytes(),
-            description.into_bytes(),
-            none(), // TODO
-            ctx,
-        );
+        assert!(treasury_cap.supply().supply_value() == 0, EMTokenSupplyNotZero);
 
         let mtoken_coin = treasury_cap.mint(vesting_coin.value(), ctx);
 
         let manager = VestingManager {
             id: object::new(ctx),
+            version: VERSION,
             vesting_balance: vesting_coin.into_balance(),
             penalty_balance: balance::zero(),
             mtoken_treasury_cap: treasury_cap,
@@ -76,7 +101,13 @@ module mtoken::mtoken {
             manager: manager.id.to_inner(),
         };
 
-        transfer::public_freeze_object(metadata);
+        emit(MintMTokensEvent {
+            manager_id: manager.id.to_inner(),
+            mtoken_minted: mtoken_coin.value(),
+            mtoken_type: type_name::get<MToken>(),
+            vesting_type: type_name::get<Vesting>(),
+            penalty_type: type_name::get<Penalty>(),
+        });
 
         (admin_cap, manager, mtoken_coin)
     }
@@ -88,6 +119,8 @@ module mtoken::mtoken {
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<Vesting> {
+        manager.assert_version_and_upgrade();
+
         let withdraw_amount = mtoken_coin.value();
         let current_time = clock::timestamp_ms(clock) / 1000;
     
@@ -120,6 +153,15 @@ module mtoken::mtoken {
             penalty_coin.balance_mut().split(penalty_amount)
         );
 
+        emit(RedeemMTokensEvent {
+            manager_id: manager.id.to_inner(),
+            withdraw_amount,
+            penalty_amount,
+            mtoken_type: type_name::get<MToken>(),
+            vesting_type: type_name::get<Vesting>(),
+            penalty_type: type_name::get<Penalty>(),
+        });
+
         // Return vested coin
         coin::from_balance(manager.vesting_balance.split(withdraw_amount), ctx)
     }
@@ -129,15 +171,55 @@ module mtoken::mtoken {
         admin_cap: &AdminCap<MToken, Vesting, Penalty>,
         ctx: &mut TxContext,
     ): Coin<Penalty> {
+        manager.assert_version_and_upgrade();
         assert!(admin_cap.manager == object::id(manager), EIncorrectAdminCap);
-        coin::from_balance(manager.penalty_balance.withdraw_all(), ctx)
+
+        let balance = manager.penalty_balance.withdraw_all();
+
+        emit(PenaltyCollectedEvent {
+            manager_id: manager.id.to_inner(),
+            amount_collected: balance.value(),
+            mtoken_type: type_name::get<MToken>(),
+            vesting_type: type_name::get<Vesting>(),
+            penalty_type: type_name::get<Penalty>(),
+        });
+
+        coin::from_balance(balance, ctx)
     }
 
-    // View functions
+    // ===== View functions =====
+
     public fun manager<MToken, Vesting, Penalty>(admin_cap: &AdminCap<MToken, Vesting, Penalty>): ID { admin_cap.id.to_inner() }
     public fun start_penalty_numerator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.start_penalty_numerator }
     public fun end_penalty_numerator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.end_penalty_numerator }
     public fun penalty_denominator<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.penalty_denominator }
     public fun start_time_s<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.start_time_s }
     public fun end_time_s<MToken, Vesting, Penalty>(manager: &VestingManager<MToken, Vesting, Penalty>): u64 { manager.end_time_s }
+
+    // ===== Upgrade functions =====
+
+    public fun migrate<MToken: drop, Vesting, Penalty>(
+        _admin: &AdminCap<MToken, Vesting, Penalty>,
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+    ) {
+        assert!(manager.version < VERSION, EIncorrectVersion);
+        manager.version = VERSION;
+    }
+
+    // ===== Package functions =====
+
+    public(package) fun assert_version<MToken, Vesting, Penalty>(
+        manager: &VestingManager<MToken, Vesting, Penalty>,
+    ) {
+        assert!(manager.version == VERSION, EIncorrectVersion);
+    }
+
+    public(package) fun assert_version_and_upgrade<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+    ) {
+        if (manager.version < VERSION) {
+            manager.version = VERSION;
+        };
+        assert_version(manager);
+    }
 }
