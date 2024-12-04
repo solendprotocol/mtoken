@@ -1,4 +1,5 @@
 module mtoken::mtoken {
+    use std::type_name::{Self, TypeName};
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin, TreasuryCap};
     use sui::clock::{Self, Clock};
@@ -40,20 +41,29 @@ module mtoken::mtoken {
 
     // ===== Events =====
 
-    public struct MintMTokensEvent<phantom MToken, phantom Vesting, phantom Penalty> has store, copy, drop {
+    public struct MintMTokensEvent has store, copy, drop {
         manager_id: ID,
         mtoken_minted: u64,
+        mtoken_type: TypeName,
+        vesting_type: TypeName,
+        penalty_type: TypeName,
     }
 
-    public struct RedeemMTokensEvent<phantom MToken, phantom Vesting, phantom Penalty> has store, copy, drop {
+    public struct RedeemMTokensEvent has store, copy, drop {
         manager_id: ID,
         withdraw_amount: u64,
         penalty_amount: u64,
+        mtoken_type: TypeName,
+        vesting_type: TypeName,
+        penalty_type: TypeName,
     }
 
-    public struct PenaltyCollectedEvent<phantom MToken, phantom Vesting, phantom Penalty> has store, copy, drop {
+    public struct PenaltyCollectedEvent has store, copy, drop {
         manager_id: ID,
         amount_collected: u64,
+        mtoken_type: TypeName,
+        vesting_type: TypeName,
+        penalty_type: TypeName,
     }
 
     // ===== Public functions =====
@@ -91,9 +101,12 @@ module mtoken::mtoken {
             manager: manager.id.to_inner(),
         };
 
-        emit(MintMTokensEvent<MToken, Vesting, Penalty> {
+        emit(MintMTokensEvent {
             manager_id: manager.id.to_inner(),
             mtoken_minted: mtoken_coin.value(),
+            mtoken_type: type_name::get<MToken>(),
+            vesting_type: type_name::get<Vesting>(),
+            penalty_type: type_name::get<Penalty>(),
         });
 
         (admin_cap, manager, mtoken_coin)
@@ -140,10 +153,13 @@ module mtoken::mtoken {
             penalty_coin.balance_mut().split(penalty_amount)
         );
 
-        emit(RedeemMTokensEvent<MToken, Vesting, Penalty> {
+        emit(RedeemMTokensEvent {
             manager_id: manager.id.to_inner(),
             withdraw_amount,
             penalty_amount,
+            mtoken_type: type_name::get<MToken>(),
+            vesting_type: type_name::get<Vesting>(),
+            penalty_type: type_name::get<Penalty>(),
         });
 
         // Return vested coin
@@ -160,9 +176,12 @@ module mtoken::mtoken {
 
         let balance = manager.penalty_balance.withdraw_all();
 
-        emit(PenaltyCollectedEvent<MToken, Vesting, Penalty> {
+        emit(PenaltyCollectedEvent {
             manager_id: manager.id.to_inner(),
             amount_collected: balance.value(),
+            mtoken_type: type_name::get<MToken>(),
+            vesting_type: type_name::get<Vesting>(),
+            penalty_type: type_name::get<Penalty>(),
         });
 
         coin::from_balance(balance, ctx)
