@@ -39,18 +39,18 @@ module mtoken::mtoken {
 
     // ===== Events =====
 
-    public struct MintMTokensEvent has store, copy, drop {
+    public struct MintMTokensEvent<phantom MToken, phantom Vesting, phantom Penalty> has store, copy, drop {
         manager_id: ID,
         mtoken_minted: u64,
     }
 
-    public struct RedeemMTokensEvent has store, copy, drop {
+    public struct RedeemMTokensEvent<phantom MToken, phantom Vesting, phantom Penalty> has store, copy, drop {
         manager_id: ID,
         withdraw_amount: u64,
         penalty_amount: u64,
     }
 
-    public struct PenaltyCollectedEvent has store, copy, drop {
+    public struct PenaltyCollectedEvent<phantom MToken, phantom Vesting, phantom Penalty> has store, copy, drop {
         manager_id: ID,
         amount_collected: u64,
     }
@@ -89,7 +89,7 @@ module mtoken::mtoken {
             manager: manager.id.to_inner(),
         };
 
-        emit(MintMTokensEvent {
+        emit(MintMTokensEvent<MToken, Vesting, Penalty> {
             manager_id: manager.id.to_inner(),
             mtoken_minted: mtoken_coin.value(),
         });
@@ -138,7 +138,7 @@ module mtoken::mtoken {
             penalty_coin.balance_mut().split(penalty_amount)
         );
 
-        emit(RedeemMTokensEvent {
+        emit(RedeemMTokensEvent<MToken, Vesting, Penalty> {
             manager_id: manager.id.to_inner(),
             withdraw_amount,
             penalty_amount,
@@ -158,7 +158,7 @@ module mtoken::mtoken {
 
         let balance = manager.penalty_balance.withdraw_all();
 
-        emit(PenaltyCollectedEvent {
+        emit(PenaltyCollectedEvent<MToken, Vesting, Penalty> {
             manager_id: manager.id.to_inner(),
             amount_collected: balance.value(),
         });
