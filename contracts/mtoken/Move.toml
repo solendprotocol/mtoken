@@ -7,6 +7,10 @@ edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet", override = true }
 suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "contracts/suilend", rev = "devel"}
+send = { git = "https://github.com/solendprotocol/send", rev = "master" }
+msend_3_month = { local = "../msend_coins/msend_3_month" }
+msend_6_month = { local = "../msend_coins/msend_6_month" }
+msend_12_month = { local = "../msend_coins/msend_12_month" }
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
