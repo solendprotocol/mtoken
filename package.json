@@ -1,31 +1,37 @@
 {
-    "name": "@mtoken/sdk",
-    "version": "1.0.9",
-    "private": true,
-    "description": "A TypeScript SDK for interacting with the mToken program",
-    "author": "Suilend",
-    "license": "MIT",
-    "main": "./sdk/src/index.ts",
-    "exports": {
-      ".": "./sdk/src/index.js"
-    },
-    "types": "./sdk/src/index.ts",
-    "scripts": {
-      "build": "rm -rf ./dist && bun tsc",
-      "eslint": "eslint --fix \"./sdk/src/**/*.ts\"",
-      "prettier": "prettier --write \"./sdk/src/**/*\"",
-      "lint": "bun eslint && bun prettier",
-      "release": "bun run build && bun ts-node ./prepublish.ts && cd ./dist && npm publish --access public"
-    },
-    "dependencies": {
-      "@mysten/sui": "^1.9.0",
-      "bn.js": "^5.2.1"
-    },
-    "devDependencies": {
-      "@types/bn.js": "^5.1.6",
-      "@types/chai": "^4.3.19",
-      "@types/jest": "^29.5.13",
-      "chai": "^5.1.1",
-      "jest": "^29.7.0"
-    }
+  "name": "@mtoken/sdk",
+  "version": "1.0.9",
+  "private": true,
+  "description": "A TypeScript SDK for interacting with the mToken program",
+  "author": "Suilend",
+  "license": "MIT",
+  "main": "./sdk/src/index.ts",
+  "include": [
+    "sdk/src",
+    "scripts/**/*.ts"
+  ],
+  "exports": {
+    ".": "./sdk/src/index.js"
+  },
+  "types": "./sdk/src/index.ts",
+  "scripts": {
+    "build": "rm -rf ./dist && bun tsc",
+    "eslint": "eslint --fix \"./sdk/src/**/*.ts\"",
+    "prettier": "prettier --write \"./sdk/src/**/*\"",
+    "lint": "bun eslint && bun prettier",
+    "release": "bun run build && bun ts-node ./prepublish.ts && cd ./dist && npm publish --access public"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.9.0",
+    "bech32": "^2.0.0",
+    "bn.js": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.6",
+    "@types/chai": "^4.3.19",
+    "@types/jest": "^29.5.13",
+    "chai": "^5.1.1",
+    "jest": "^29.7.0",
+    "tsx": "^4.19.2"
   }
+}

@@ -3,3 +3,4 @@ build
 Move.lock
 
 node_modules
+.env
