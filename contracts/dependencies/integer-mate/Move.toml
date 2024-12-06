@@ -1,17 +1,12 @@
 [package]
-name = "init_msend"
-edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+name = "IntegerMate"
+edition = "legacy" # edition = "legacy" to use legacy (pre-2024) Move
+published-at="0xe2b515f0052c0b3f83c23db045d49dbe1732818ccfc5d4596c9482f7f2e76a85"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet", override = true }
-suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "contracts/suilend", rev = "mainnet"}
-send = { git = "https://github.com/solendprotocol/send", rev = "master" }
-mtoken = { local = "../mtoken" }
-msend_3_month = { local = "../msend_coins/msend_3_month" }
-msend_6_month = { local = "../msend_coins/msend_6_month" }
-msend_12_month = { local = "../msend_coins/msend_12_month" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
@@ -25,14 +20,13 @@ msend_12_month = { local = "../msend_coins/msend_12_month" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-init_msend = "0x0"
+integer_mate = "0x714a63a0dba6da4f017b42d5d0fb78867f18bcde904868e51d951a5a6f5b7f57"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
 # alice = "0xA11CE"
 
 [dev-dependencies]
-CetusClmm = { local = "../dependencies/cetus" }
 # The dev-dependencies section allows overriding dependencies for `--test` and
 # `--dev` modes. You can introduce test-only dependencies here.
 # Local = { local = "../path/to/dev-build" }
