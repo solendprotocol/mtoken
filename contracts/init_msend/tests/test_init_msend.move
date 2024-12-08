@@ -16,7 +16,7 @@ module init_msend::init_msend_test {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
         let mut clock = clock::create_for_testing(ctx(&mut scenario));
-        clock.set_for_testing(1733508512000);
+        clock.set_for_testing(1733979600 * 1_000);
         
         let (admin_cap, mut manager, mtoken_coin) = mint_msend3(
             coin::create_treasury_cap_for_testing<MSEND_3_MONTH>(scenario.ctx()),
@@ -53,7 +53,7 @@ module init_msend::init_msend_test {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
         let mut clock = clock::create_for_testing(ctx(&mut scenario));
-        clock.set_for_testing(1733508512000);
+        clock.set_for_testing(1733979600 * 1_000);
 
         let (admin_cap, mut manager, mtoken_coin) = mint_msend6(
             coin::create_treasury_cap_for_testing<MSEND_6_MONTH>(scenario.ctx()),
@@ -90,7 +90,7 @@ module init_msend::init_msend_test {
         let owner = @0x10;
         let mut scenario = test_scenario::begin(owner);
         let mut clock = clock::create_for_testing(ctx(&mut scenario));
-        clock.set_for_testing(1733508512000);
+        clock.set_for_testing(1733979600 * 1_000);
 
         let (admin_cap, mut manager, mtoken_coin) = mint_msend12(
             coin::create_treasury_cap_for_testing<MSEND_12_MONTH>(scenario.ctx()),
