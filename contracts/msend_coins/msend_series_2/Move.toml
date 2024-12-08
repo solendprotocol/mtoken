@@ -2,6 +2,7 @@
 name = "msend_series_2"
 version = "0.0.1"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+published-at = "0x0831a17664901e5102063c8b40f181bce4d92e0d56b5e20a374560a08d0295ed"
 
 [dependencies.Sui]
 git = "https://github.com/MystenLabs/sui.git"
@@ -10,5 +11,5 @@ rev = "framework/mainnet"
 
 
 [addresses]
-msend_series_2 = "0x0"
+msend_series_2= "0x0831a17664901e5102063c8b40f181bce4d92e0d56b5e20a374560a08d0295ed"
 sui = "0x2"
