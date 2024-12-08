@@ -1,5 +1,5 @@
 [package]
-name = "msend_12_month"
+name = "msend_series_3"
 version = "0.0.1"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 
@@ -10,5 +10,5 @@ rev = "framework/mainnet"
 
 
 [addresses]
-msend_12_month = "0x0"
+msend_series_3 = "0x0"
 sui = "0x2"
