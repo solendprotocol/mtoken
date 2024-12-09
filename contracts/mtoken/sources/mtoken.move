@@ -99,7 +99,7 @@ module mtoken::mtoken {
             manager: manager.id.to_inner(),
         };
 
-        let mtoken_coin = mint_more_mtokens(
+        let mtoken_coin = mint_mtokens_internal(
             &mut manager,
             &admin_cap,
             vesting_coin,
@@ -110,6 +110,15 @@ module mtoken::mtoken {
     }
 
     public fun mint_more_mtokens<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        admin_cap: &AdminCap<MToken, Vesting, Penalty>,
+        coin: Coin<Vesting>,
+        ctx: &mut TxContext,
+    ): Coin<MToken> {
+        mint_mtokens_internal(manager, admin_cap, coin, ctx)
+    }
+
+    fun mint_mtokens_internal<MToken, Vesting, Penalty>(
         manager: &mut VestingManager<MToken, Vesting, Penalty>,
         _: &AdminCap<MToken, Vesting, Penalty>,
         coin: Coin<Vesting>,
