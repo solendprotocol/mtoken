@@ -118,6 +118,18 @@ module mtoken::mtoken {
         mint_mtokens_internal(manager, admin_cap, coin, ctx)
     }
 
+    public fun set_penalty<MToken: drop, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        _admin_cap: &AdminCap<MToken, Vesting, Penalty>,
+        start_penalty_numerator: u64,
+        end_penalty_numerator: u64,
+        penalty_denominator: u64
+    ) {
+        manager.start_penalty_numerator = start_penalty_numerator;
+        manager.end_penalty_numerator = end_penalty_numerator;
+        manager.penalty_denominator = penalty_denominator;
+    }
+
     fun mint_mtokens_internal<MToken, Vesting, Penalty>(
         manager: &mut VestingManager<MToken, Vesting, Penalty>,
         _: &AdminCap<MToken, Vesting, Penalty>,

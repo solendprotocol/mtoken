@@ -718,4 +718,56 @@ module mtoken::mtoken_tests {
 
         test_scenario::end(scenario);
     }
+
+    #[test]
+    fun test_set_penalty_and_immediate_redeem() {
+        let owner = @0x10;
+        let mut scenario = test_scenario::begin(owner);
+        let clock = clock::create_for_testing(ctx(&mut scenario));
+
+        let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
+        let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
+
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
+            create_one_time_witness<VEST>(),
+            underlying_coin,
+            &metadata,
+            100,
+            10,
+            100,
+            clock.timestamp_ms() / 1_000,
+            (clock.timestamp_ms() / 1_000) + 100,
+            ctx(&mut scenario),
+        );
+
+        manager.set_penalty(
+            &admin_cap,
+            10,
+            0,
+            100
+        );
+
+        // Immediate redeem
+        let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));
+
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
+            &mut manager,
+            mtoken_coin,
+            &mut penalty_sui,
+            &clock,
+            ctx(&mut scenario),
+        );
+
+        assert!(penalty_sui.value() == 10_000 - 800, 0);
+
+        destroy(unvested_coin);
+        destroy(clock);
+        destroy(penalty_sui);
+        destroy(metadata);
+        destroy(treasury_cap);
+        destroy(manager);
+        destroy(admin_cap);
+
+        test_scenario::end(scenario);
+    }
 }
