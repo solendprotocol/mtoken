@@ -119,7 +119,7 @@ module mtoken::mtoken {
         mint_mtokens_internal(manager, admin_cap, coin, ctx)
     }
 
-    entry fun set_penalty<MToken: drop, Vesting, Penalty>(
+    entry fun set_params<MToken: drop, Vesting, Penalty>(
         manager: &mut VestingManager<MToken, Vesting, Penalty>,
         _admin_cap: &AdminCap<MToken, Vesting, Penalty>,
         start_penalty_numerator: u64,

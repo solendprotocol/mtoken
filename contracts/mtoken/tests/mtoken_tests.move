@@ -743,7 +743,7 @@ module mtoken::mtoken_tests {
         scenario.next_tx(owner);
 
         let mut mtoken_metadata: CoinMetadata<VEST> = scenario.take_shared();
-        manager.set_penalty(
+        manager.set_params(
             &admin_cap,
             10,
             0,
