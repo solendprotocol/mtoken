@@ -10,6 +10,7 @@ module mtoken::mtoken_tests {
     use sui::sui::SUI;
     use sui::test_scenario::{Self, ctx};
     use sui::test_utils::{create_one_time_witness, destroy};
+    use std::string::{Self};
 
     public fun mint_mtokens_for_test<MToken: drop, Vesting, Penalty>(
         otw: MToken,
@@ -49,7 +50,7 @@ module mtoken::mtoken_tests {
             ctx,
         );
 
-        transfer::public_freeze_object(metadata);
+        transfer::public_share_object(metadata);
 
         (admin_cap, manager, mtoken_coin)
     }
@@ -739,13 +740,24 @@ module mtoken::mtoken_tests {
             (clock.timestamp_ms() / 1_000) + 100,
             ctx(&mut scenario),
         );
+        scenario.next_tx(owner);
 
+        let mut mtoken_metadata: CoinMetadata<VEST> = scenario.take_shared();
         manager.set_penalty(
             &admin_cap,
             10,
             0,
-            100
+            100,
+            &mut mtoken_metadata,
+            string::utf8(b"asdfasdfasdf"),
         );
+
+        assert!(mtoken_metadata.get_description() == string::utf8(b"asdfasdfasdf"), 0);
+        test_scenario::return_shared(mtoken_metadata);
+
+        assert!(manager.start_penalty_numerator() == 10, 0);
+        assert!(manager.end_penalty_numerator() == 0, 0);
+        assert!(manager.penalty_denominator() == 100, 0);
 
         // Immediate redeem
         let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));

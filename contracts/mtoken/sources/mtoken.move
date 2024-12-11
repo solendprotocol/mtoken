@@ -1,10 +1,11 @@
 module mtoken::mtoken {
     use std::type_name::{Self, TypeName};
     use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin, TreasuryCap};
+    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
     use sui::clock::{Self, Clock};
     use sui::event::emit;
     use suilend::decimal;
+    use std::string::String;
 
     // ===== Constants =====
 
@@ -118,16 +119,22 @@ module mtoken::mtoken {
         mint_mtokens_internal(manager, admin_cap, coin, ctx)
     }
 
-    public fun set_penalty<MToken: drop, Vesting, Penalty>(
+    entry fun set_penalty<MToken: drop, Vesting, Penalty>(
         manager: &mut VestingManager<MToken, Vesting, Penalty>,
         _admin_cap: &AdminCap<MToken, Vesting, Penalty>,
         start_penalty_numerator: u64,
         end_penalty_numerator: u64,
-        penalty_denominator: u64
+        penalty_denominator: u64,
+        metadata: &mut CoinMetadata<MToken>,
+        description: String,
     ) {
+        manager.assert_version_and_upgrade();
+
         manager.start_penalty_numerator = start_penalty_numerator;
         manager.end_penalty_numerator = end_penalty_numerator;
         manager.penalty_denominator = penalty_denominator;
+
+        manager.mtoken_treasury_cap.update_description(metadata, description);
     }
 
     fun mint_mtokens_internal<MToken, Vesting, Penalty>(
