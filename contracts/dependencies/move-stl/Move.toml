@@ -1,17 +1,13 @@
 [package]
-name = "init_msend"
-edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+name = "MoveStl"
+edition = "legacy" # edition = "legacy" to use legacy (pre-2024) Move
+# published-at="0xe93247b408fe44ed0ee5b6ac508b36325b239d6333e44ffa240dcc0c1a69cdd8"
+published-at="0xe93247b408fe44ed0ee5b6ac508b36325b239d6333e44ffa240dcc0c1a69cdd8"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet", override = true }
-suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "contracts/suilend", rev = "mainnet"}
-send = { git = "https://github.com/solendprotocol/send", rev = "master" }
-mtoken = { local = "../mtoken" }
-msend_series_1 = { local = "../msend_coins/msend_series_1" }
-msend_series_2 = { local = "../msend_coins/msend_series_2" }
-msend_series_3 = { local = "../msend_coins/msend_series_3" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
@@ -25,14 +21,13 @@ msend_series_3 = { local = "../msend_coins/msend_series_3" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-init_msend = "0x0"
+move_stl = "0xbe21a06129308e0495431d12286127897aff07a8ade3970495a4404d97f9eaaa"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
 # alice = "0xA11CE"
 
 [dev-dependencies]
-CetusClmm = { local = "../dependencies/cetus" }
 # The dev-dependencies section allows overriding dependencies for `--test` and
 # `--dev` modes. You can introduce test-only dependencies here.
 # Local = { local = "../path/to/dev-build" }

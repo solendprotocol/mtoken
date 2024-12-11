@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+      "noImplicitReturns": true,
+      "noUnusedLocals": false,
+      "outDir": "dist",
+      "sourceMap": true,
+      "removeComments": false,
+      "strict": true,
+      "module": "ESNext",
+      "target": "ESNext",
+      "checkJs": false,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "moduleResolution": "Bundler",
+      "resolveJsonModule": true,
+      "allowJs": true
+    },
+    "compileOnSave": true,
+    "include": ["./sdk/src/**/*.ts"],
+    "exclude": ["demo"]
+  }

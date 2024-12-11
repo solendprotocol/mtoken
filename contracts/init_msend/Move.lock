@@ -2,8 +2,8 @@
 
 [move]
 version = 3
-manifest_digest = "DBB1020AB306355D05247E7A0E9871240A03333352395618E79BC2C8A1E79B06"
-deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
+manifest_digest = "5E86EE38A2F9F7AC894D27B38B64C1D87AA01C6BE20F0468D1948C9044B801BD"
+deps_digest = "04732BFEF428F74DE262001DC455D76B909EBC394B034A9A15CC095E4BDD9CEF"
 dependencies = [
   { id = "Sui", name = "Sui" },
   { id = "msend_series_1", name = "msend_series_1" },
@@ -13,10 +13,39 @@ dependencies = [
   { id = "send", name = "send" },
   { id = "suilend", name = "suilend" },
 ]
+dev-dependencies = [
+  { id = "CetusClmm", name = "CetusClmm" },
+]
+
+[[move.package]]
+id = "CetusClmm"
+source = { local = "../dependencies/cetus" }
+
+dependencies = [
+  { id = "IntegerMate", name = "IntegerMate" },
+  { id = "MoveStl", name = "MoveStl" },
+  { id = "Sui", name = "Sui" },
+]
+
+[[move.package]]
+id = "IntegerMate"
+source = { local = "../dependencies/integer-mate" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
 
 [[move.package]]
 id = "MoveStdlib"
 source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/move-stdlib" }
+
+[[move.package]]
+id = "MoveStl"
+source = { local = "../dependencies/move-stl" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
 
 [[move.package]]
 id = "Pyth"
@@ -122,7 +151,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.35.3"
+compiler-version = "1.38.3"
 edition = "2024.beta"
 flavor = "sui"
 
