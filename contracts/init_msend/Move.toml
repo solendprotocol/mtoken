@@ -9,9 +9,9 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "contracts/suilend", rev = "mainnet"}
 send = { git = "https://github.com/solendprotocol/send", rev = "master" }
 mtoken = { local = "../mtoken" }
-msend_3_month = { local = "../msend_coins/msend_3_month" }
-msend_6_month = { local = "../msend_coins/msend_6_month" }
-msend_12_month = { local = "../msend_coins/msend_12_month" }
+msend_series_1 = { local = "../msend_coins/msend_series_1" }
+msend_series_2 = { local = "../msend_coins/msend_series_2" }
+msend_series_3 = { local = "../msend_coins/msend_series_3" }
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.

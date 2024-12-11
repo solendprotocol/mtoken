@@ -1,0 +1,16 @@
+[package]
+name = "msend_series_1"
+version = "0.0.1"
+edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+published-at = "0xda097d57ae887fbd002fb5847dd0ab47ae7e1b183fd36832a51182c52257e1bc"
+
+[dependencies.Sui]
+git = "https://github.com/MystenLabs/sui.git"
+subdir = "crates/sui-framework/packages/sui-framework"
+rev = "framework/mainnet"
+
+
+[addresses]
+# msend_series_1 = "0x0"
+msend_series_1 = "0xda097d57ae887fbd002fb5847dd0ab47ae7e1b183fd36832a51182c52257e1bc"
+sui = "0x2"

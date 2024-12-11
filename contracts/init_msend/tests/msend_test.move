@@ -13,7 +13,7 @@ module init_msend::msend_test {
     use cetus_clmm::config;
     use sui::tx_context::sender;
     use send::send::SEND;
-    use msend_3_month::msend_3_month::{MSEND_3_MONTH as MSEND};
+    use msend_series_1::msend_series_1::{MSEND_SERIES_1 as MSEND};
     use mtoken::mtoken;
 
     const START_TIME_S: u64 = 1733228602;
