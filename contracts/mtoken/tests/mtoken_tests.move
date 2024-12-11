@@ -10,6 +10,7 @@ module mtoken::mtoken_tests {
     use sui::sui::SUI;
     use sui::test_scenario::{Self, ctx};
     use sui::test_utils::{create_one_time_witness, destroy};
+    use std::string::{Self};
 
     public fun mint_mtokens_for_test<MToken: drop, Vesting, Penalty>(
         otw: MToken,
@@ -49,7 +50,7 @@ module mtoken::mtoken_tests {
             ctx,
         );
 
-        transfer::public_freeze_object(metadata);
+        transfer::public_share_object(metadata);
 
         (admin_cap, manager, mtoken_coin)
     }
@@ -715,6 +716,69 @@ module mtoken::mtoken_tests {
         destroy(mtoken_coin);
         destroy(admin_cap);
         destroy(manager);
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun test_set_penalty_and_immediate_redeem() {
+        let owner = @0x10;
+        let mut scenario = test_scenario::begin(owner);
+        let clock = clock::create_for_testing(ctx(&mut scenario));
+
+        let (mut treasury_cap, metadata) = underlying::create_currency(ctx(&mut scenario));
+        let underlying_coin = treasury_cap.mint(8_000, ctx(&mut scenario));
+
+        let (admin_cap, mut manager, mtoken_coin) = mint_mtokens_for_test<VEST, UNDERLYING, SUI>(
+            create_one_time_witness<VEST>(),
+            underlying_coin,
+            &metadata,
+            100,
+            10,
+            100,
+            clock.timestamp_ms() / 1_000,
+            (clock.timestamp_ms() / 1_000) + 100,
+            ctx(&mut scenario),
+        );
+        scenario.next_tx(owner);
+
+        let mut mtoken_metadata: CoinMetadata<VEST> = scenario.take_shared();
+        manager.set_params(
+            &admin_cap,
+            10,
+            0,
+            100,
+            &mut mtoken_metadata,
+            string::utf8(b"asdfasdfasdf"),
+        );
+
+        assert!(mtoken_metadata.get_description() == string::utf8(b"asdfasdfasdf"), 0);
+        test_scenario::return_shared(mtoken_metadata);
+
+        assert!(manager.start_penalty_numerator() == 10, 0);
+        assert!(manager.end_penalty_numerator() == 0, 0);
+        assert!(manager.penalty_denominator() == 100, 0);
+
+        // Immediate redeem
+        let mut penalty_sui: Coin<SUI> = coin::mint_for_testing(10_000, ctx(&mut scenario));
+
+        let unvested_coin = mtoken::redeem_mtokens<VEST, UNDERLYING, SUI>(
+            &mut manager,
+            mtoken_coin,
+            &mut penalty_sui,
+            &clock,
+            ctx(&mut scenario),
+        );
+
+        assert!(penalty_sui.value() == 10_000 - 800, 0);
+
+        destroy(unvested_coin);
+        destroy(clock);
+        destroy(penalty_sui);
+        destroy(metadata);
+        destroy(treasury_cap);
+        destroy(manager);
+        destroy(admin_cap);
 
         test_scenario::end(scenario);
     }
