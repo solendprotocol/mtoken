@@ -1,7 +1,7 @@
 [package]
 name = "mtoken"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-published-at = "0xf88f95b957c9c2d92d0d39dd1975b251d484802e40c518089c6147ead6ccc430"
+published-at = "0x61e3f8d11911a21500c69afb08de505ae9edd0fc0b74551d45a7412fe1196bda"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
@@ -21,6 +21,7 @@ suilend = { git = "https://github.com/solendprotocol/suilend.git", subdir = "con
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
+# mtoken = "0x0"
 mtoken = "0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
