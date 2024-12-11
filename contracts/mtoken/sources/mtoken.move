@@ -81,12 +81,10 @@ module mtoken::mtoken {
         assert!(end_time_s > start_time_s, EEndTimeBeforeStartTime);
         assert!(treasury_cap.supply().supply_value() == 0, EMTokenSupplyNotZero);
 
-        let mtoken_coin = treasury_cap.mint(vesting_coin.value(), ctx);
-
-        let manager = VestingManager {
+        let mut manager = VestingManager {
             id: object::new(ctx),
             version: VERSION,
-            vesting_balance: vesting_coin.into_balance(),
+            vesting_balance: balance::zero(),
             penalty_balance: balance::zero(),
             mtoken_treasury_cap: treasury_cap,
             start_penalty_numerator,
@@ -101,6 +99,36 @@ module mtoken::mtoken {
             manager: manager.id.to_inner(),
         };
 
+        let mtoken_coin = mint_mtokens_internal(
+            &mut manager,
+            &admin_cap,
+            vesting_coin,
+            ctx,
+        );
+
+        (admin_cap, manager, mtoken_coin)
+    }
+
+    public fun mint_more_mtokens<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        admin_cap: &AdminCap<MToken, Vesting, Penalty>,
+        coin: Coin<Vesting>,
+        ctx: &mut TxContext,
+    ): Coin<MToken> {
+        mint_mtokens_internal(manager, admin_cap, coin, ctx)
+    }
+
+    fun mint_mtokens_internal<MToken, Vesting, Penalty>(
+        manager: &mut VestingManager<MToken, Vesting, Penalty>,
+        _: &AdminCap<MToken, Vesting, Penalty>,
+        coin: Coin<Vesting>,
+        ctx: &mut TxContext,
+    ): Coin<MToken> {
+        manager.assert_version_and_upgrade();
+
+        let mtoken_coin = manager.mtoken_treasury_cap.mint(coin.value(), ctx);
+        manager.vesting_balance.join(coin.into_balance());
+
         emit(MintMTokensEvent {
             manager_id: manager.id.to_inner(),
             mtoken_minted: mtoken_coin.value(),
@@ -109,7 +137,7 @@ module mtoken::mtoken {
             penalty_type: type_name::get<Penalty>(),
         });
 
-        (admin_cap, manager, mtoken_coin)
+        mtoken_coin
     }
     
     public fun redeem_mtokens<MToken, Vesting, Penalty>(

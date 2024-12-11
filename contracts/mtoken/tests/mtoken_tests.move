@@ -119,7 +119,17 @@ module mtoken::mtoken_tests {
 
         assert!(penalty_sui.value() == 10_000 - 800, 0);
 
+        let underlying_coin = treasury_cap.mint(1_000, ctx(&mut scenario));
+        let mtoken_coin = mtoken::mint_more_mtokens<VEST, UNDERLYING, SUI>(
+            &mut manager,
+            &admin_cap,
+            underlying_coin,
+            ctx(&mut scenario),
+        );
+        assert!(mtoken_coin.value() == 1_000, 0);
+
         destroy(unvested_coin);
+        destroy(mtoken_coin);
         destroy(clock);
         destroy(penalty_sui);
         destroy(metadata);
