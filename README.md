@@ -8,5 +8,7 @@ The contract provides functionality for redeeming vested tokens, where penalties
 ### Build and Test
 
 `cd contract/`
+
 `sui move build` to build contract
+
 `sui move test` to run tests
