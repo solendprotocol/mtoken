@@ -174,22 +174,8 @@ module mtoken::mtoken {
         // Ensure current time is within the valid range
         assert!(current_time >= manager.start_time_s, ERedeemingBeforeStartTime);
 
-        // Interpolate penalty linearly
-        let end_penalty = decimal::from(manager.end_penalty_numerator)
-                .mul(decimal::from(withdraw_amount))
-                .div(decimal::from(manager.penalty_denominator));
-
-        let penalty_amount = if (current_time < manager.end_time_s) {
-            let start_penalty = decimal::from(manager.start_penalty_numerator)
-                .mul(decimal::from(withdraw_amount))
-                .div(decimal::from(manager.penalty_denominator));
-
-            let time_weight = decimal::from(manager.end_time_s)
-                .sub(decimal::from(current_time))
-                .div(decimal::from(manager.end_time_s).sub(decimal::from(manager.start_time_s)));
-            
-            start_penalty.mul(time_weight).add(end_penalty.mul(decimal::from(1).sub(time_weight))).ceil()
-        } else { end_penalty.ceil() };
+        // Get penalty amount
+        let penalty_amount = manager.get_penalty_amount(withdraw_amount, clock);
 
         assert!(penalty_coin.value() >= penalty_amount, ENotEnoughPenaltyFunds);
 
@@ -232,6 +218,33 @@ module mtoken::mtoken {
         });
 
         coin::from_balance(balance, ctx)
+    }
+
+    public fun get_penalty_amount<MToken, Vesting, Penalty>(
+        manager: &VestingManager<MToken, Vesting, Penalty>,
+        mtoken_burn_amount: u64,
+        clock: &Clock,
+    ): u64 {
+        let current_time = clock::timestamp_ms(clock) / 1000;
+
+        // Interpolate penalty linearly
+        let end_penalty = decimal::from(manager.end_penalty_numerator)
+                .mul(decimal::from(mtoken_burn_amount))
+                .div(decimal::from(manager.penalty_denominator));
+
+        let penalty_amount = if (current_time < manager.end_time_s) {
+            let start_penalty = decimal::from(manager.start_penalty_numerator)
+                .mul(decimal::from(mtoken_burn_amount))
+                .div(decimal::from(manager.penalty_denominator));
+
+            let time_weight = decimal::from(manager.end_time_s)
+                .sub(decimal::from(current_time))
+                .div(decimal::from(manager.end_time_s).sub(decimal::from(manager.start_time_s)));
+            
+            start_penalty.mul(time_weight).add(end_penalty.mul(decimal::from(1).sub(time_weight))).ceil()
+        } else { end_penalty.ceil() };
+
+        penalty_amount
     }
 
     // ===== View functions =====
